@@ -1,4 +1,4 @@
-from model.CalculadoraService import CalculadoraService
+from technicalServices.CalculadoraService import CalculadoraService
 from view.CalculadoraView import CalculadoraView
 
 
