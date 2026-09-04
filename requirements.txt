@@ -1,1 +1,8 @@
-flask
+fastapi>=0.135.0
+starlette>=1.0.0
+uvicorn
+jinja2
+python-multipart
+sqlalchemy
+pydantic
+psycopg2-binary

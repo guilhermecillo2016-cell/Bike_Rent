@@ -1,46 +1,59 @@
-from flask import Flask, request, render_template
+from fastapi import FastAPI, Request, Form
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 import os
 import sys
 
-# Adiciona a pasta raiz ('Bike_Rent') ao caminho de busca do Python
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from domain.CalculadoraService import CalculadoraService
 
-app = Flask(__name__)
+app = FastAPI()
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+ 
+templates = Jinja2Templates(directory=TEMPLATES_DIR)
 service = CalculadoraService()
-
-
+ 
+ 
 class CalculadoraView:
-    """Camada de apresentação (View) — agora também trata as requisições web."""
-
-    def mostrar_formulario(self):
-        return render_template("index.html", resultado=None, erro=None)
-
-    def somar(self):
-        try:
-            num1 = float(request.form["num1"])
-            num2 = float(request.form["num2"])
-        except (ValueError, KeyError):
-            return render_template("index.html", resultado=None,
-                                    erro="Por favor, insira dois números válidos.")
-
+    
+ 
+    def mostrar_formulario(self, request: Request):
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {"resultado": None, "erro": None},
+        )
+ 
+    def somar(self, request: Request, num1: float, num2: float):
         resultado = service.somar(num1, num2)
-        return render_template("index.html", resultado=resultado,
-                                num1=num1, num2=num2, erro=None)
-
-
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {
+                "resultado": resultado,
+                "num1": num1,
+                "num2": num2,
+                "erro": None,
+            },
+        )
+ 
+ 
 view = CalculadoraView()
-
-
-@app.route("/", methods=["GET"])
-def index():
-    return view.mostrar_formulario()
-
-
-@app.route("/somar", methods=["POST"])
-def somar():
-    return view.somar()
-
-
+ 
+ 
+@app.get("/", response_class=HTMLResponse)
+def index(request: Request):
+    return view.mostrar_formulario(request)
+ 
+ 
+@app.post("/somar", response_class=HTMLResponse)
+def somar(request: Request, num1: float = Form(...), num2: float = Form(...)):
+    return view.somar(request, num1, num2)
+ 
+ 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import uvicorn
+ 
+    uvicorn.run("CalculadoraView:app", host="127.0.0.1", port=8000, reload=True)
