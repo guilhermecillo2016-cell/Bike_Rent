@@ -1,8 +1,10 @@
-fastapi>=0.135.0
-starlette>=1.0.0
+fastapi>=0.115.0
 uvicorn
-jinja2
 python-multipart
-sqlalchemy
 pydantic
-psycopg2-binary
+email-validator
+
+# Autenticação
+passlib[bcrypt]
+bcrypt==4.0.1        # passlib 1.7.4 é incompatível com bcrypt>=4.1 (bug conhecido)
+python-jose[cryptography]

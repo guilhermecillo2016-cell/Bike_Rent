@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bike Rent — área administrativa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <!-- Painel esquerdo -->
+      <section class="hero">
+        <div class="hero-brand">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <circle cx="6.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
+            <circle cx="19.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
+            <path
+              d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13"
+              stroke="#F5F3ED"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          Bike Rent · Admin
+        </div>
+
+        <div class="hero-copy">
+          <h1>Cadastre novas estações na rede.</h1>
+          <p>
+            Informe local, coordenadas e capacidade para que a estação fique
+            disponível para os ciclistas.
+          </p>
+        </div>
+
+        <svg
+          class="route-map"
+          viewBox="0 0 420 420"
+          fill="none"
+          aria-hidden="true"
+        >
+          <path
+            d="M20 340 C 90 340, 90 260, 150 250 S 230 180, 260 140 S 330 100, 400 80"
+            stroke="#41598A"
+            stroke-width="2"
+            stroke-dasharray="2 10"
+            stroke-linecap="round"
+          />
+          <circle cx="20" cy="340" r="7" fill="#F2B705" />
+          <circle cx="150" cy="250" r="6" fill="#C7D0E0" />
+          <circle cx="260" cy="140" r="6" fill="#C7D0E0" />
+          <circle cx="400" cy="80" r="7" fill="#2F8F4E" />
+        </svg>
+
+        <div class="hero-foot">
+          <div><strong>Restrito</strong>acesso administrativo</div>
+        </div>
+      </section>
+
+      <!-- Painel direito -->
+      <section class="panel">
+        <!-- Login / cadastro de admin -->
+        <div class="card" id="card-login">
+          <div class="tabs" role="tablist">
+            <button
+              class="tab"
+              id="tab-login"
+              role="tab"
+              aria-selected="true"
+              aria-controls="form-login"
+            >
+              Entrar
+            </button>
+            <button
+              class="tab"
+              id="tab-register"
+              role="tab"
+              aria-selected="false"
+              aria-controls="form-register"
+            >
+              Cadastrar admin
+            </button>
+          </div>
+
+          <form id="form-login" class="active" novalidate>
+            <h2>Acesso administrativo</h2>
+            <p class="sub">
+              Entre com uma conta com permissão de administrador.
+            </p>
+
+            <div class="field">
+              <label for="login-email">E-mail</label>
+              <input
+                id="login-email"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="login-password">Senha</label>
+              <input
+                id="login-password"
+                type="password"
+                autocomplete="current-password"
+                required
+              />
+            </div>
+
+            <button class="btn" type="submit">Entrar</button>
+            <div class="msg" id="login-msg"></div>
+          </form>
+
+          <form id="form-register" novalidate>
+            <h2>Cadastrar administrador</h2>
+            <p class="sub">
+              Exige a chave definida no servidor (variável ADMIN_SECRET).
+            </p>
+
+            <div class="field">
+              <label for="reg-email">E-mail</label>
+              <input
+                id="reg-email"
+                type="email"
+                autocomplete="email"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="reg-password">Senha</label>
+              <input
+                id="reg-password"
+                type="password"
+                autocomplete="new-password"
+                minlength="6"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="reg-cpf">CPF</label>
+              <input
+                id="reg-cpf"
+                type="text"
+                inputmode="numeric"
+                placeholder="000.000.000-00"
+                maxlength="14"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="reg-telefone">Telefone</label>
+              <input
+                id="reg-telefone"
+                type="tel"
+                placeholder="(11) 99999-8888"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="reg-secret">Chave de administrador</label>
+              <input
+                id="reg-secret"
+                type="password"
+                autocomplete="off"
+                required
+              />
+            </div>
+
+            <button class="btn" type="submit">Cadastrar administrador</button>
+            <div class="msg" id="register-msg"></div>
+          </form>
+
+          <p class="footer-link"><a href="/">Voltar para o site</a></p>
+        </div>
+
+        <!-- Painel administrativo -->
+        <div class="card wide" id="card-dashboard" style="display: none">
+          <p class="sub" style="margin-bottom: 24px">
+            Logado como <strong id="admin-email">—</strong>
+          </p>
+
+          <h2>Criar estação</h2>
+          <p class="sub">
+            Ela ficará disponível na lista pública de estações assim que for
+            criada.
+          </p>
+
+          <form id="form-estacao" novalidate>
+            <div class="field">
+              <label for="est-nome">Nome</label>
+              <input
+                id="est-nome"
+                type="text"
+                placeholder="Ex: Estação Praça da Sé"
+                required
+              />
+            </div>
+            <div class="field">
+              <label for="est-endereco">Endereço</label>
+              <input
+                id="est-endereco"
+                type="text"
+                placeholder="Rua, número, bairro"
+                required
+              />
+            </div>
+            <div class="field-row-2">
+              <div class="field">
+                <label for="est-lat">Latitude</label>
+                <input
+                  id="est-lat"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="-23.5505"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="est-lng">Longitude</label>
+                <input
+                  id="est-lng"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="-46.6333"
+                  required
+                />
+              </div>
+            </div>
+            <div class="field">
+              <label for="est-capacidade">Capacidade total de vagas</label>
+              <input
+                id="est-capacidade"
+                type="number"
+                min="1"
+                placeholder="20"
+                required
+              />
+            </div>
+
+            <button class="btn" type="submit">Criar estação</button>
+            <div class="msg" id="estacao-msg"></div>
+          </form>
+
+          <div class="toolbar" style="margin-top: 32px">
+            <h2>Estações cadastradas</h2>
+            <button class="btn secondary" id="refresh-btn" type="button">
+              Atualizar
+            </button>
+          </div>
+
+          <table class="data-table" id="estacoes-table">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Endereço</th>
+                <th>Coordenadas</th>
+                <th>Vagas</th>
+              </tr>
+            </thead>
+            <tbody id="estacoes-table-body"></tbody>
+          </table>
+          <div class="empty-state" id="estacoes-empty" style="display: none">
+            Nenhuma estação cadastrada ainda.
+          </div>
+
+          <button class="btn secondary logout" id="logout-btn" type="button">
+            Sair
+          </button>
+          <p class="footer-link"><a href="/">Voltar para o site</a></p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        const TOKEN_KEY = "rota_access_token";
+
+        const tabLogin = document.getElementById("tab-login");
+        const tabRegister = document.getElementById("tab-register");
+        const formLogin = document.getElementById("form-login");
+        const formRegister = document.getElementById("form-register");
+        const cardLogin = document.getElementById("card-login");
+        const cardDashboard = document.getElementById("card-dashboard");
+
+        function showTab(which) {
+          const loginActive = which === "login";
+          tabLogin.setAttribute("aria-selected", String(loginActive));
+          tabRegister.setAttribute("aria-selected", String(!loginActive));
+          formLogin.classList.toggle("active", loginActive);
+          formRegister.classList.toggle("active", !loginActive);
+        }
+        tabLogin.addEventListener("click", () => showTab("login"));
+        tabRegister.addEventListener("click", () => showTab("register"));
+
+        function showMsg(el, text, type) {
+          el.textContent = text;
+          el.className = "msg show " + type;
+        }
+        function clearMsg(el) {
+          el.className = "msg";
+        }
+        function setLoading(button, loading, idleLabel) {
+          button.disabled = loading;
+          button.textContent = loading ? "Enviando..." : idleLabel;
+        }
+        function authHeader() {
+          return { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` };
+        }
+
+        document.getElementById("reg-cpf").addEventListener("input", (e) => {
+          let v = e.target.value.replace(/\D/g, "").slice(0, 11);
+          v = v
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d)/, "$1.$2")
+            .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+          e.target.value = v;
+        });
+
+        // ---------------- Cadastro de admin ----------------
+        formRegister.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const msg = document.getElementById("register-msg");
+          clearMsg(msg);
+          const button = formRegister.querySelector(".btn");
+
+          const payload = {
+            email: document.getElementById("reg-email").value.trim(),
+            senha: document.getElementById("reg-password").value,
+            cpf: document.getElementById("reg-cpf").value.trim(),
+            telefone: document.getElementById("reg-telefone").value.trim(),
+          };
+          const secret = document.getElementById("reg-secret").value;
+
+          setLoading(button, true, "Cadastrar administrador");
+          try {
+            const res = await fetch("/adminweb/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Admin-Secret": secret,
+              },
+              body: JSON.stringify(payload),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              showMsg(
+                msg,
+                data.detail || "Não foi possível cadastrar o administrador.",
+                "error",
+              );
+              return;
+            }
+            showMsg(
+              msg,
+              "Administrador criado. Agora entre com esses dados.",
+              "success",
+            );
+            document.getElementById("login-email").value = payload.email;
+            formRegister.reset();
+            setTimeout(() => showTab("login"), 900);
+          } catch (err) {
+            showMsg(msg, "Não foi possível falar com o servidor.", "error");
+          } finally {
+            setLoading(button, false, "Cadastrar administrador");
+          }
+        });
+
+        // ---------------- Login ----------------
+        formLogin.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const msg = document.getElementById("login-msg");
+          clearMsg(msg);
+          const button = formLogin.querySelector(".btn");
+
+          const body = new URLSearchParams();
+          body.append(
+            "username",
+            document.getElementById("login-email").value.trim(),
+          );
+          body.append(
+            "password",
+            document.getElementById("login-password").value,
+          );
+
+          setLoading(button, true, "Entrar");
+          try {
+            const res = await fetch("/webclient/login", {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: body.toString(),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              showMsg(
+                msg,
+                data.detail || "E-mail ou senha incorretos.",
+                "error",
+              );
+              return;
+            }
+            localStorage.setItem(TOKEN_KEY, data.access_token);
+            formLogin.reset();
+            await carregarDashboard();
+          } catch (err) {
+            showMsg(msg, "Não foi possível falar com o servidor.", "error");
+          } finally {
+            setLoading(button, false, "Entrar");
+          }
+        });
+
+        // ---------------- Criar estação ----------------
+        document
+          .getElementById("form-estacao")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById("estacao-msg");
+            clearMsg(msg);
+            const button = e.target.querySelector(".btn");
+
+            const payload = {
+              nome: document.getElementById("est-nome").value.trim(),
+              endereco: document.getElementById("est-endereco").value.trim(),
+              latitude: parseFloat(document.getElementById("est-lat").value),
+              longitude: parseFloat(document.getElementById("est-lng").value),
+              capacidade_total: parseInt(
+                document.getElementById("est-capacidade").value,
+                10,
+              ),
+            };
+
+            setLoading(button, true, "Criar estação");
+            try {
+              const res = await fetch("/adminweb/estacoes", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...authHeader(),
+                },
+                body: JSON.stringify(payload),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                const detalhe = Array.isArray(data.detail)
+                  ? data.detail.map((d) => d.msg).join(", ")
+                  : data.detail || "Não foi possível criar a estação.";
+                showMsg(msg, detalhe, "error");
+                return;
+              }
+              showMsg(msg, "Estação criada com sucesso.", "success");
+              e.target.reset();
+              await carregarEstacoes();
+            } catch (err) {
+              showMsg(msg, "Não foi possível falar com o servidor.", "error");
+            } finally {
+              setLoading(button, false, "Criar estação");
+            }
+          });
+
+        document
+          .getElementById("refresh-btn")
+          .addEventListener("click", carregarEstacoes);
+
+        // ---------------- Renderização ----------------
+        function renderEstacoes(estacoes) {
+          const tbody = document.getElementById("estacoes-table-body");
+          const table = document.getElementById("estacoes-table");
+          const empty = document.getElementById("estacoes-empty");
+          tbody.innerHTML = "";
+
+          if (!estacoes.length) {
+            table.style.display = "none";
+            empty.style.display = "block";
+            return;
+          }
+          table.style.display = "table";
+          empty.style.display = "none";
+
+          for (const est of estacoes) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+        <td>${est.nome}</td>
+        <td>${est.endereco}</td>
+        <td>${est.latitude.toFixed(4)}, ${est.longitude.toFixed(4)}</td>
+        <td>${est.vagas_disponiveis}/${est.capacidade_total}</td>
+      `;
+            tbody.appendChild(tr);
+          }
+        }
+
+        async function carregarEstacoes() {
+          const res = await fetch("/adminweb/estacoes", {
+            headers: authHeader(),
+          });
+          if (res.ok) renderEstacoes(await res.json());
+        }
+
+        async function carregarDashboard() {
+          const token = localStorage.getItem(TOKEN_KEY);
+          if (!token) {
+            cardLogin.style.display = "block";
+            cardDashboard.style.display = "none";
+            return;
+          }
+          try {
+            const meRes = await fetch("/webclient/me", {
+              headers: authHeader(),
+            });
+            if (!meRes.ok) {
+              localStorage.removeItem(TOKEN_KEY);
+              cardLogin.style.display = "block";
+              cardDashboard.style.display = "none";
+              return;
+            }
+            const me = await meRes.json();
+            if (!me.is_admin) {
+              cardLogin.style.display = "block";
+              cardDashboard.style.display = "none";
+              showMsg(
+                document.getElementById("login-msg"),
+                "Essa conta não tem permissão de administrador.",
+                "error",
+              );
+              return;
+            }
+            document.getElementById("admin-email").textContent = me.email;
+            cardLogin.style.display = "none";
+            cardDashboard.style.display = "block";
+            await carregarEstacoes();
+          } catch (err) {
+            cardLogin.style.display = "block";
+            cardDashboard.style.display = "none";
+          }
+        }
+
+        document.getElementById("logout-btn").addEventListener("click", () => {
+          localStorage.removeItem(TOKEN_KEY);
+          cardLogin.style.display = "block";
+          cardDashboard.style.display = "none";
+          showTab("login");
+        });
+
+        carregarDashboard();
+      })();
+    </script>
+  </body>
+</html>
