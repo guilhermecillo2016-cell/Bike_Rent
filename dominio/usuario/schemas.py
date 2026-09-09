@@ -18,10 +18,18 @@ class UsuarioCreate(BaseModel):
     endereco: Optional[str] = None
 
 
+class AdminCreate(BaseModel):
+    """Cadastro de administrador — só o essencial (Pessoa: nome/email/senha).
+    Sem CPF/telefone: administrador não é um ciclista."""
+
+    email: EmailStr
+    senha: str = Field(min_length=6)
+
+
 class UsuarioPublic(BaseModel):
     email: EmailStr
-    cpf: str  # sempre mascarado antes de sair pela API — ver service.mask_cpf
-    telefone: str
+    cpf: Optional[str] = None  # sempre mascarado antes de sair pela API — ver service.mask_cpf
+    telefone: Optional[str] = None
     endereco: Optional[str] = None
     is_admin: bool = False
 

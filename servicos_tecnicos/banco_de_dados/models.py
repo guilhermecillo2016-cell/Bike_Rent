@@ -13,8 +13,9 @@ from typing import Optional
 class UsuarioORM:
     email: str
     senha_hash: str
-    cpf: str
-    telefone: str
+    # cpf/telefone só existem para ciclistas; administrador não os possui
+    cpf: Optional[str] = None
+    telefone: Optional[str] = None
     endereco: Optional[str] = None
     is_admin: bool = False
 

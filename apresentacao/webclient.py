@@ -45,6 +45,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="E-mail ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    if usuario.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Contas de administrador devem acessar /gestao.html",
+        )
     access_token = usuario_service.create_access_token(data={"sub": usuario.email})
     return Token(access_token=access_token)
 

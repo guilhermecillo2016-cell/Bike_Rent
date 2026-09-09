@@ -13,7 +13,9 @@ import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
-from dominio.usuario.schemas import UsuarioCreate, UsuarioPublic
+from fastapi.security import OAuth2PasswordRequestForm
+
+from dominio.usuario.schemas import AdminCreate, UsuarioPublic, Token
 from dominio.usuario import service as usuario_service
 
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
@@ -34,7 +36,7 @@ router = APIRouter(prefix="/adminweb", tags=["AdminWeb"])
 
 @router.post("/register", response_model=UsuarioPublic, status_code=status.HTTP_201_CREATED)
 def register_admin(
-    dados: UsuarioCreate,
+    dados: AdminCreate,
     x_admin_secret: str = Header(..., alias="X-Admin-Secret"),
 ):
     if x_admin_secret != ADMIN_SECRET:
@@ -42,8 +44,26 @@ def register_admin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chave de administrador inválida",
         )
-    usuario = usuario_service.register_user(dados, is_admin=True)
+    usuario = usuario_service.register_admin(dados)
     return usuario_service.to_public(usuario)
+
+
+@router.post("/login", response_model=Token)
+def login_admin(form_data: OAuth2PasswordRequestForm = Depends()):
+    usuario = usuario_service.authenticate_user(form_data.username, form_data.password)
+    if not usuario:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="E-mail ou senha incorretos",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    if not usuario.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso restrito a administradores",
+        )
+    access_token = usuario_service.create_access_token(data={"sub": usuario.email})
+    return Token(access_token=access_token)
 
 
 # ------------------------------------------------------------------

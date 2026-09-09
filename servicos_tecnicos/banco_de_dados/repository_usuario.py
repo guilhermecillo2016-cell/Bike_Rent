@@ -19,9 +19,9 @@ def get_by_email(email: str) -> Optional[UsuarioORM]:
 def create(
     email: str,
     senha_hash: str,
-    cpf: str,
-    telefone: str,
-    endereco: Optional[str],
+    cpf: Optional[str] = None,
+    telefone: Optional[str] = None,
+    endereco: Optional[str] = None,
     is_admin: bool = False,
 ) -> UsuarioORM:
     usuario = UsuarioORM(

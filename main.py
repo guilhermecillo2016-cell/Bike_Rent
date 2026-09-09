@@ -8,10 +8,16 @@ Rodar:
     uvicorn main:app --reload
 
 Depois acesse http://127.0.0.1:8000/ (site do ciclista) e
-http://127.0.0.1:8000/admin.html (área administrativa).
+http://127.0.0.1:8000/gestao.html (área administrativa).
 """
 
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Precisa rodar antes de importar os módulos abaixo: eles leem
+# ADMIN_SECRET/SECRET_KEY de os.getenv() assim que são importados.
+load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
