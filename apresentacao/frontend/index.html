@@ -260,7 +260,7 @@
                   type="text"
                   inputmode="numeric"
                   placeholder="123"
-                  maxlength="4"
+                  maxlength="3"
                   required
                 />
               </div>
@@ -376,6 +376,9 @@
             if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
             e.target.value = v;
           });
+        document.getElementById("cartao-cvv").addEventListener("input", (e) => {
+          e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+        });
 
         // ---------------- Cadastro ----------------
         formRegister.addEventListener("submit", async (e) => {
