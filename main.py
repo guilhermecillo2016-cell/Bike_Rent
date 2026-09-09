@@ -21,10 +21,11 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-
+from servicos_tecnicos.exceptions import registrar_exception_handlers
 from apresentacao import webclient, adminweb
 
 app = FastAPI(title="Rota — Bike Sharing API")
+registrar_exception_handlers(app)
 
 app.include_router(webclient.router)
 app.include_router(adminweb.router)
