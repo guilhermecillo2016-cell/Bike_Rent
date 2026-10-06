@@ -8,7 +8,7 @@ estações, usado pelos domínios Bicicleta e Estacao.
 from servicos_tecnicos.iot.trava_inteligente import TravaInteligente
 from servicos_tecnicos.iot.mock import TravaMock
 
-_instancia = TravaInteligente | None = None
+_instancia: TravaInteligente | None = None
 
 def get_trava() -> TravaInteligente:
     global _instancia
