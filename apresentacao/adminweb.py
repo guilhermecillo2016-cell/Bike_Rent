@@ -74,9 +74,9 @@ def criar_estacao(
     dados: EstacaoCreate,
     _admin=Depends(usuario_service.get_current_admin_user),
 ):
-    return estacao_service.criar_estacao(dados)
+    return estacao_service.to_public(estacao_service.criar_estacao(dados))
 
 
 @router.get("/estacoes", response_model=list[EstacaoPublic])
 def listar_estacoes(_admin=Depends(usuario_service.get_current_admin_user)):
-    return estacao_service.listar_estacoes()
+    return [estacao_service.to_public(e) for e in estacao_service.listar_estacoes()]

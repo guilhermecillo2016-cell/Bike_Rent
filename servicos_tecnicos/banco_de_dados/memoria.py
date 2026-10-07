@@ -10,11 +10,28 @@ Quando um banco de verdade entrar, só esse arquivo (e os
 repository_*.py que o usam) precisam mudar.
 """
 
+import itertools
+from collections import defaultdict
+
 # username/email -> UsuarioORM
 usuarios: dict[str, "object"] = {}
 
 # id da estação -> EstacaoORM
-estacoes: dict[str, "object"] = {}
+estacoes: dict[int, "object"] = {}
+
+# id da bicicleta -> BicicletaORM
+bicicletas: dict[int, "object"] = {}
+
+# id do pacote -> PacoteMinutosORM
+pacotes: dict[int, "object"] = {}
 
 # email do usuário -> lista de CartaoORM
 cartoes: dict[str, list] = {}
+
+# Contador de ids inteiros por coleção (1, 2, 3, ...), no lugar da
+# sequência/auto-incremento que um banco real faria.
+_contadores = defaultdict(lambda: itertools.count(1))
+
+
+def proximo_id(colecao: str) -> int:
+    return next(_contadores[colecao])

@@ -83,4 +83,4 @@ def meus_cartoes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)
 # ------------------------------------------------------------------
 @router.get("/estacoes", response_model=list[EstacaoPublic])
 def listar_estacoes_publico():
-    return estacao_service.listar_estacoes()
+    return [estacao_service.to_public(e) for e in estacao_service.listar_estacoes()]

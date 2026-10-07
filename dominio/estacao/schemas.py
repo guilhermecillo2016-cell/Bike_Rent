@@ -16,7 +16,7 @@ class EstacaoCreate(BaseModel):
 
 
 class EstacaoPublic(BaseModel):
-    id: str
+    id: int
     nome: str
     endereco: str
     latitude: float
