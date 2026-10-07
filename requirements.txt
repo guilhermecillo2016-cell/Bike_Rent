@@ -4,8 +4,6 @@ python-multipart
 pydantic
 email-validator
 python-dotenv
-pytest
-httpx
 
 # Autenticação
 passlib[bcrypt]
