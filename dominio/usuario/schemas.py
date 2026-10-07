@@ -8,9 +8,10 @@ já que essa história exige um ciclista autenticado.
 
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
-
+from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 
 class UsuarioCreate(BaseModel):
+    nome: str
     email: EmailStr
     senha: str = Field(min_length=6)
     cpf: str
@@ -21,18 +22,18 @@ class UsuarioCreate(BaseModel):
 class AdminCreate(BaseModel):
     """Cadastro de administrador — só o essencial (Pessoa: nome/email/senha).
     Sem CPF/telefone: administrador não é um ciclista."""
-
+    nome: str
     email: EmailStr
     senha: str = Field(min_length=6)
 
 
 class UsuarioPublic(BaseModel):
+    nome: str
     email: EmailStr
     cpf: Optional[str] = None  # sempre mascarado antes de sair pela API — ver service.mask_cpf
     telefone: Optional[str] = None
     endereco: Optional[str] = None
-    is_admin: bool = False
-
+    papel: PapelUsuario
 
 class Token(BaseModel):
     access_token: str

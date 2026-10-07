@@ -85,17 +85,6 @@ class LocacaoORM:
 
 
 @dataclass
-class PacoteMinutosORM:
-    id: int
-    usuario_email: str
-    minutos_totais: int
-    minutos_restantes: int
-    data_validade: datetime
-    # False até o pagamento da compra ser aprovado
-    ativo: bool = False
-
-
-@dataclass
 class PagamentoORM:
     """Paga uma corrida OU a compra de um pacote: exatamente um entre
     locacao_id e pacote_id deve estar preenchido (validado no service)."""
@@ -134,10 +123,24 @@ class ComprovanteORM:
 
 @dataclass
 class EventoAuditoriaORM:
+    """Histórico de alterações manuais de status (UC2, pós-condição 3).
+    Não consta no diagrama de classes; ver issue [C7]."""
+
     id: int
     data_hora: datetime
-    usuario_email: str  
+    usuario_email: str
     tipo_entidade: Literal["BICICLETA", "ESTACAO"]
     entidade_id: int
     status_anterior: str
     status_novo: str
+
+
+@dataclass
+class PacoteMinutosORM:
+    id: int
+    usuario_email: str
+    minutos_totais: int
+    minutos_restantes: int
+    data_validade: datetime
+    # False até o pagamento da compra ser aprovado
+    ativo: bool = False

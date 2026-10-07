@@ -123,6 +123,15 @@
             <p class="sub">Leva menos de dois minutos.</p>
 
             <div class="field">
+              <label for="reg-nome">Nome</label>
+              <input
+                id="reg-nome"
+                type="text"
+                autocomplete="name"
+                required
+              />
+            </div>
+            <div class="field">
               <label for="reg-email">E-mail</label>
               <input
                 id="reg-email"
@@ -388,6 +397,7 @@
           const button = formRegister.querySelector(".btn");
 
           const payload = {
+            nome: document.getElementById("reg-nome").value.trim(),
             email: document.getElementById("reg-email").value.trim(),
             senha: document.getElementById("reg-password").value,
             cpf: document.getElementById("reg-cpf").value.trim(),

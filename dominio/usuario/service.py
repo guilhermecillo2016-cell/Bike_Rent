@@ -20,6 +20,7 @@ from passlib.context import CryptContext
 
 from servicos_tecnicos.banco_de_dados import repository_usuario as repo
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from dominio.usuario.schemas import AdminCreate, UsuarioCreate, UsuarioPublic, TokenData
 
 # ------------------------------------------------------------------
@@ -61,11 +62,12 @@ def mask_cpf(cpf: Optional[str]) -> Optional[str]:
 
 def to_public(usuario: UsuarioORM) -> UsuarioPublic:
     return UsuarioPublic(
+        nome=usuario.nome,
         email=usuario.email,
         cpf=mask_cpf(usuario.cpf),
         telefone=usuario.telefone,
         endereco=usuario.endereco,
-        is_admin=usuario.is_admin,
+        papel=usuario.papel,
     )
 
 
@@ -97,12 +99,13 @@ def register_user(dados: UsuarioCreate) -> UsuarioORM:
         )
 
     return repo.create(
+        nome=dados.nome,
         email=dados.email,
         senha_hash=get_password_hash(dados.senha),
         cpf=re.sub(r"\D", "", dados.cpf),
         telefone=dados.telefone,
         endereco=dados.endereco,
-        is_admin=False,
+        papel=PapelUsuario.CICLISTA,
     )
 
 
@@ -118,9 +121,10 @@ def register_admin(dados: AdminCreate) -> UsuarioORM:
         )
 
     return repo.create(
+        nome=dados.nome,
         email=dados.email,
         senha_hash=get_password_hash(dados.senha),
-        is_admin=True,
+        papel=PapelUsuario.ADMINISTRADOR,
     )
 
 
@@ -182,7 +186,7 @@ def get_current_admin_user(token: str = Depends(oauth2_scheme_admin)) -> Usuario
     usuario = repo.get_by_email(token_data.email)
     if usuario is None:
         raise credentials_exception
-    if not usuario.is_admin:
+    if usuario.papel != PapelUsuario.ADMINISTRADOR:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso restrito a administradores",

@@ -12,6 +12,7 @@ ciclista ver onde há bicicletas disponíveis).
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
+from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
 
 from dominio.usuario.schemas import UsuarioCreate, UsuarioPublic, Token
@@ -45,7 +46,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="E-mail ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if usuario.is_admin:
+    if usuario.papel == PapelUsuario.ADMINISTRADOR:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Contas de administrador devem acessar /gestao.html",

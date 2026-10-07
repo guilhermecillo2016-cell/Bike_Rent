@@ -124,6 +124,15 @@
             </p>
 
             <div class="field">
+              <label for="reg-nome">Nome</label>
+              <input
+                id="reg-nome"
+                type="text"
+                autocomplete="name"
+                required
+              />
+            </div>
+            <div class="field">
               <label for="reg-email">E-mail</label>
               <input
                 id="reg-email"
@@ -304,6 +313,7 @@
           const button = formRegister.querySelector(".btn");
 
           const payload = {
+            nome: document.getElementById("reg-nome").value.trim(),
             email: document.getElementById("reg-email").value.trim(),
             senha: document.getElementById("reg-password").value,
           };
@@ -490,7 +500,7 @@
               return;
             }
             const me = await meRes.json();
-            if (!me.is_admin) {
+            if (me.papel !== "ADMINISTRADOR") {
               cardLogin.style.display = "block";
               cardDashboard.style.display = "none";
               showMsg(
