@@ -10,6 +10,7 @@ separado do cadastro público (WebClient) e exige uma chave secreta
 """
 
 import os
+import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
@@ -17,7 +18,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 
-from dominio.usuario.schemas import AdminCreate, UsuarioPublic, Token
+from dominio.usuario.schemas import AdminCreate, OperadorCreate, UsuarioPublic, Token
 from dominio.usuario import service as usuario_service
 
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
@@ -35,13 +36,22 @@ if ADMIN_SECRET == "troque-esta-chave-admin":
 
 router = APIRouter(prefix="/adminweb", tags=["AdminWeb"])
 
+# Quem entra no painel de gestão: a equipe (nunca o ciclista).
+PAPEIS_EQUIPE = (PapelUsuario.ADMINISTRADOR, PapelUsuario.OPERADOR_CAMPO)
+
+# Dependencies de permissão (ver usuario_service.requer_papel).
+somente_admin = usuario_service.requer_papel(PapelUsuario.ADMINISTRADOR)
+equipe = usuario_service.requer_papel(*PAPEIS_EQUIPE)
+
 
 @router.post("/register", response_model=UsuarioPublic, status_code=status.HTTP_201_CREATED)
 def register_admin(
     dados: AdminCreate,
     x_admin_secret: str = Header(..., alias="X-Admin-Secret"),
 ):
-    if x_admin_secret != ADMIN_SECRET:
+    # compare_digest evita vazar a chave por tempo de resposta; em bytes
+    # porque ele recusa str com caracteres não-ASCII.
+    if not secrets.compare_digest(x_admin_secret.encode(), ADMIN_SECRET.encode()):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Chave de administrador inválida",
@@ -59,13 +69,23 @@ def login_admin(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="E-mail ou senha incorretos",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    if usuario.papel != PapelUsuario.ADMINISTRADOR:
+    if usuario.papel not in PAPEIS_EQUIPE:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acesso restrito a administradores",
+            detail="Acesso restrito a administradores e operadores de campo",
         )
     access_token = usuario_service.create_access_token(data={"sub": usuario.email})
     return Token(access_token=access_token)
+
+
+# ------------------------------------------------------------------
+# Cadastro de operador de campo — só um administrador logado cria
+# a conta; ninguém vira operador sozinho.
+# ------------------------------------------------------------------
+@router.post("/operadores", response_model=UsuarioPublic, status_code=status.HTTP_201_CREATED)
+def cadastrar_operador(dados: OperadorCreate, _admin=Depends(somente_admin)):
+    usuario = usuario_service.register_operador(dados)
+    return usuario_service.to_public(usuario)
 
 
 # ------------------------------------------------------------------
@@ -74,11 +94,11 @@ def login_admin(form_data: OAuth2PasswordRequestForm = Depends()):
 @router.post("/estacoes", response_model=EstacaoPublic, status_code=status.HTTP_201_CREATED)
 def criar_estacao(
     dados: EstacaoCreate,
-    _admin=Depends(usuario_service.get_current_admin_user),
+    _admin=Depends(somente_admin),
 ):
     return estacao_service.to_public(estacao_service.criar_estacao(dados))
 
 
 @router.get("/estacoes", response_model=list[EstacaoPublic])
-def listar_estacoes(_admin=Depends(usuario_service.get_current_admin_user)):
+def listar_estacoes(_usuario=Depends(equipe)):
     return [estacao_service.to_public(e) for e in estacao_service.listar_estacoes()]
