@@ -10,6 +10,7 @@ from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 
 
 def get_by_email(email: str) -> Optional[UsuarioORM]:
@@ -17,20 +18,22 @@ def get_by_email(email: str) -> Optional[UsuarioORM]:
 
 
 def create(
+    nome: str,
     email: str,
     senha_hash: str,
+    papel: PapelUsuario,
     cpf: Optional[str] = None,
     telefone: Optional[str] = None,
     endereco: Optional[str] = None,
-    is_admin: bool = False,
 ) -> UsuarioORM:
     usuario = UsuarioORM(
+        nome=nome,
         email=email,
         senha_hash=senha_hash,
         cpf=cpf,
+        papel=papel,
         telefone=telefone,
         endereco=endereco,
-        is_admin=is_admin,
     )
     memoria.usuarios[email] = usuario
     return usuario
