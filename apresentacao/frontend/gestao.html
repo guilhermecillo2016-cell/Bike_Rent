@@ -293,6 +293,46 @@
             Nenhuma estação cadastrada ainda.
           </div>
 
+          <!-- Bicicletas: a equipe vê a lista; só o administrador cadastra -->
+          <div id="bloco-bicicletas" style="margin-top: 32px">
+            <div class="toolbar">
+              <h2>Bicicletas</h2>
+              <button class="btn secondary" id="refresh-bicicletas-btn" type="button">
+                Atualizar
+              </button>
+            </div>
+
+            <div id="bloco-bicicleta-form" style="display: none">
+              <p class="sub">
+                A bicicleta nasce disponível na estação escolhida, ocupando
+                uma vaga, e recebe um QR Code automático.
+              </p>
+              <form id="form-bicicleta" class="active" novalidate>
+                <div class="field">
+                  <label for="bike-estacao">Estação</label>
+                  <select id="bike-estacao" required></select>
+                </div>
+                <button class="btn" type="submit">Cadastrar bicicleta</button>
+                <div class="msg" id="bicicleta-msg"></div>
+              </form>
+            </div>
+
+            <table class="data-table" id="bicicletas-table" style="margin-top: 16px">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>QR Code</th>
+                  <th>Status</th>
+                  <th>Estação</th>
+                </tr>
+              </thead>
+              <tbody id="bicicletas-table-body"></tbody>
+            </table>
+            <div class="empty-state" id="bicicletas-empty" style="display: none">
+              Nenhuma bicicleta cadastrada ainda.
+            </div>
+          </div>
+
           <button class="btn secondary logout" id="logout-btn" type="button">
             Sair
           </button>
@@ -552,12 +592,128 @@
           }
         }
 
+        let estacoesCache = [];
+
         async function carregarEstacoes() {
           const res = await fetch("/adminweb/estacoes", {
             headers: authHeader(),
           });
-          if (res.ok) renderEstacoes(await res.json());
+          if (!res.ok) return;
+          estacoesCache = await res.json();
+          renderEstacoes(estacoesCache);
+          preencherSelectEstacoes();
         }
+
+        // ---------------- Bicicletas ----------------
+        const ROTULO_STATUS = {
+          DISPONIVEL: "Disponível",
+          EM_USO: "Em uso",
+          EM_MANUTENCAO: "Em manutenção",
+          BLOQUEADA: "Bloqueada",
+        };
+
+        function nomeDaEstacao(id) {
+          const est = estacoesCache.find((e) => e.id === id);
+          return est ? est.nome : "—";
+        }
+
+        function preencherSelectEstacoes() {
+          const select = document.getElementById("bike-estacao");
+          const escolhida = select.value;
+          select.innerHTML = "";
+          for (const est of estacoesCache) {
+            const opt = document.createElement("option");
+            opt.value = est.id;
+            opt.textContent = `${est.nome} (${est.vagas_disponiveis}/${est.capacidade_total} vagas livres)`;
+            select.appendChild(opt);
+          }
+          if (escolhida) select.value = escolhida;
+        }
+
+        function renderBicicletas(bicicletas) {
+          const tbody = document.getElementById("bicicletas-table-body");
+          const table = document.getElementById("bicicletas-table");
+          const empty = document.getElementById("bicicletas-empty");
+          tbody.innerHTML = "";
+
+          table.style.display = bicicletas.length ? "table" : "none";
+          empty.style.display = bicicletas.length ? "none" : "block";
+
+          for (const b of bicicletas) {
+            const tr = document.createElement("tr");
+            const celulas = [
+              b.id,
+              b.qr_code,
+              ROTULO_STATUS[b.status] || b.status,
+              b.estacao_id == null ? "Em corrida" : nomeDaEstacao(b.estacao_id),
+            ];
+            for (const texto of celulas) {
+              const td = document.createElement("td");
+              td.textContent = texto;
+              tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+          }
+        }
+
+        async function carregarBicicletas() {
+          const res = await fetch("/adminweb/bicicletas", {
+            headers: authHeader(),
+          });
+          if (res.ok) renderBicicletas(await res.json());
+        }
+
+        document
+          .getElementById("form-bicicleta")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById("bicicleta-msg");
+            clearMsg(msg);
+            const button = e.target.querySelector(".btn");
+            const estacaoId = parseInt(
+              document.getElementById("bike-estacao").value,
+              10,
+            );
+            if (!estacaoId) {
+              showMsg(msg, "Cadastre uma estação primeiro.", "error");
+              return;
+            }
+
+            setLoading(button, true, "Cadastrar bicicleta");
+            try {
+              const res = await fetch("/adminweb/bicicletas", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...authHeader(),
+                },
+                body: JSON.stringify({ estacao_id: estacaoId }),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                showMsg(
+                  msg,
+                  data.detail || "Não foi possível cadastrar a bicicleta.",
+                  "error",
+                );
+                return;
+              }
+              showMsg(msg, `Bicicleta cadastrada. QR Code: ${data.qr_code}`, "success");
+              await carregarEstacoes(); // as vagas da estação mudaram
+              await carregarBicicletas();
+            } catch (err) {
+              showMsg(msg, "Não foi possível falar com o servidor.", "error");
+            } finally {
+              setLoading(button, false, "Cadastrar bicicleta");
+            }
+          });
+
+        document
+          .getElementById("refresh-bicicletas-btn")
+          .addEventListener("click", async () => {
+            await carregarEstacoes();
+            await carregarBicicletas();
+          });
 
         const PAPEIS_EQUIPE = ["ADMINISTRADOR", "OPERADOR_CAMPO"];
         const ROTULO_PAPEL = {
@@ -602,11 +758,14 @@
             document.getElementById("bloco-operador").style.display = ehAdmin
               ? "block"
               : "none";
+            document.getElementById("bloco-bicicleta-form").style.display =
+              ehAdmin ? "block" : "none";
             document.getElementById("admin-email").textContent =
               `${me.email} (${ROTULO_PAPEL[me.papel]})`;
             cardLogin.style.display = "none";
             cardDashboard.style.display = "block";
             await carregarEstacoes();
+            await carregarBicicletas();
           } catch (err) {
             cardLogin.style.display = "block";
             cardDashboard.style.display = "none";
