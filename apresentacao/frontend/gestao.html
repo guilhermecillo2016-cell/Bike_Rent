@@ -174,6 +174,7 @@
             Logado como <strong id="admin-email">—</strong>
           </p>
 
+          <div id="bloco-estacao">
           <h2>Criar estação</h2>
           <p class="sub">
             Ela ficará disponível na lista pública de estações assim que for
@@ -235,6 +236,40 @@
             <button class="btn" type="submit">Criar estação</button>
             <div class="msg" id="estacao-msg"></div>
           </form>
+          </div>
+
+          <!-- Só administrador: cria a conta do operador de campo -->
+          <div id="bloco-operador" style="display: none; margin-top: 32px">
+            <h2>Cadastrar operador de campo</h2>
+            <p class="sub">
+              O operador entra nesta mesma página com o e-mail e a senha
+              definidos aqui e só vê as telas dele.
+            </p>
+
+            <form id="form-operador" class="active" novalidate>
+              <div class="field">
+                <label for="op-nome">Nome</label>
+                <input id="op-nome" type="text" autocomplete="off" required />
+              </div>
+              <div class="field">
+                <label for="op-email">E-mail</label>
+                <input id="op-email" type="email" autocomplete="off" required />
+              </div>
+              <div class="field">
+                <label for="op-password">Senha</label>
+                <input
+                  id="op-password"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="6"
+                  required
+                />
+              </div>
+
+              <button class="btn" type="submit">Cadastrar operador</button>
+              <div class="msg" id="operador-msg"></div>
+            </form>
+          </div>
 
           <div class="toolbar" style="margin-top: 32px">
             <h2>Estações cadastradas</h2>
@@ -444,6 +479,48 @@
             }
           });
 
+        // ---------------- Cadastrar operador (só administrador) ----------------
+        document
+          .getElementById("form-operador")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById("operador-msg");
+            clearMsg(msg);
+            const button = e.target.querySelector(".btn");
+
+            const payload = {
+              nome: document.getElementById("op-nome").value.trim(),
+              email: document.getElementById("op-email").value.trim(),
+              senha: document.getElementById("op-password").value,
+            };
+
+            setLoading(button, true, "Cadastrar operador");
+            try {
+              const res = await fetch("/adminweb/operadores", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  ...authHeader(),
+                },
+                body: JSON.stringify(payload),
+              });
+              const data = await res.json();
+              if (!res.ok) {
+                const detalhe = Array.isArray(data.erros)
+                  ? data.erros.map((x) => `${x.campo}: ${x.mensagem}`).join("; ")
+                  : data.detail || "Não foi possível cadastrar o operador.";
+                showMsg(msg, detalhe, "error");
+                return;
+              }
+              showMsg(msg, `Operador ${data.email} cadastrado.`, "success");
+              e.target.reset();
+            } catch (err) {
+              showMsg(msg, "Não foi possível falar com o servidor.", "error");
+            } finally {
+              setLoading(button, false, "Cadastrar operador");
+            }
+          });
+
         document
           .getElementById("refresh-btn")
           .addEventListener("click", carregarEstacoes);
@@ -482,6 +559,12 @@
           if (res.ok) renderEstacoes(await res.json());
         }
 
+        const PAPEIS_EQUIPE = ["ADMINISTRADOR", "OPERADOR_CAMPO"];
+        const ROTULO_PAPEL = {
+          ADMINISTRADOR: "Administrador",
+          OPERADOR_CAMPO: "Operador de campo",
+        };
+
         async function carregarDashboard() {
           const token = localStorage.getItem(TOKEN_KEY);
           if (!token) {
@@ -500,17 +583,27 @@
               return;
             }
             const me = await meRes.json();
-            if (me.papel !== "ADMINISTRADOR") {
+            if (!PAPEIS_EQUIPE.includes(me.papel)) {
+              localStorage.removeItem(TOKEN_KEY);
               cardLogin.style.display = "block";
               cardDashboard.style.display = "none";
               showMsg(
                 document.getElementById("login-msg"),
-                "Essa conta não tem permissão de administrador.",
+                "Essa conta não tem acesso ao painel de gestão.",
                 "error",
               );
               return;
             }
-            document.getElementById("admin-email").textContent = me.email;
+            // Só o administrador cria estação e cadastra operador.
+            const ehAdmin = me.papel === "ADMINISTRADOR";
+            document.getElementById("bloco-estacao").style.display = ehAdmin
+              ? "block"
+              : "none";
+            document.getElementById("bloco-operador").style.display = ehAdmin
+              ? "block"
+              : "none";
+            document.getElementById("admin-email").textContent =
+              `${me.email} (${ROTULO_PAPEL[me.papel]})`;
             cardLogin.style.display = "none";
             cardDashboard.style.display = "block";
             await carregarEstacoes();
