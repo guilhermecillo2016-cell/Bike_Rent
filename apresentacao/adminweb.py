@@ -11,18 +11,22 @@ separado do cadastro público (WebClient) e exige uma chave secreta
 
 import os
 import secrets
+from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
 from fastapi.security import OAuth2PasswordRequestForm
 
-from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
+from servicos_tecnicos.banco_de_dados.enums import PapelUsuario, StatusBicicleta
 
 from dominio.usuario.schemas import AdminCreate, OperadorCreate, UsuarioPublic, Token
 from dominio.usuario import service as usuario_service
 
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
 from dominio.estacao import service as estacao_service
+
+from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic
+from dominio.bicicleta import service as bicicleta_service
 
 # Troque por uma variável de ambiente em produção:
 #   export ADMIN_SECRET="uma-chave-bem-secreta"
@@ -102,3 +106,22 @@ def criar_estacao(
 @router.get("/estacoes", response_model=list[EstacaoPublic])
 def listar_estacoes(_usuario=Depends(equipe)):
     return [estacao_service.to_public(e) for e in estacao_service.listar_estacoes()]
+
+
+# ------------------------------------------------------------------
+# Bicicletas — cadastro só do administrador; a equipe (administrador e
+# operador) consulta, porque o operador precisa enxergar a frota.
+# ------------------------------------------------------------------
+@router.post("/bicicletas", response_model=BicicletaPublic, status_code=status.HTTP_201_CREATED)
+def cadastrar_bicicleta(dados: BicicletaCreate, _admin=Depends(somente_admin)):
+    return bicicleta_service.to_public(bicicleta_service.cadastrar_bicicleta(dados))
+
+
+@router.get("/bicicletas", response_model=list[BicicletaPublic])
+def listar_bicicletas(
+    status_bicicleta: Optional[StatusBicicleta] = Query(None, alias="status"),
+    estacao_id: Optional[int] = None,
+    _usuario=Depends(equipe),
+):
+    bicicletas = bicicleta_service.listar_bicicletas(status_bicicleta, estacao_id)
+    return [bicicleta_service.to_public(b) for b in bicicletas]
