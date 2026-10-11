@@ -11,6 +11,46 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="style.css" />
+    <style>
+      /* Novos: seletor de tipo do cartão e botão de remover */
+      .field select {
+        width: 100%;
+        font: inherit;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: 1px solid #c7d0e0;
+        background: #fff;
+        color: inherit;
+      }
+      .cartao-visual {
+        position: relative;
+      }
+      .cartao-remover {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 5px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.45);
+        background: rgba(0, 0, 0, 0.25);
+        color: #fff;
+        cursor: pointer;
+      }
+      .cartao-remover:hover:not(:disabled) {
+        background: rgba(0, 0, 0, 0.45);
+      }
+      .cartao-remover:focus-visible {
+        outline: 2px solid #f2b705;
+        outline-offset: 2px;
+      }
+      .cartao-remover:disabled {
+        opacity: 0.6;
+        cursor: wait;
+      }
+    </style>
   </head>
   <body>
     <div class="layout">
@@ -223,6 +263,14 @@
             style="display: block; margin-top: 16px"
           >
             <div class="field">
+              <label for="cartao-tipo">Tipo do cartão</label>
+              <select id="cartao-tipo" required>
+                <option value="" selected disabled>Selecione</option>
+                <option value="credito">Crédito</option>
+                <option value="debito">Débito</option>
+              </select>
+            </div>
+            <div class="field">
               <label for="cartao-numero">Número do cartão</label>
               <input
                 id="cartao-numero"
@@ -338,6 +386,12 @@
         function authHeader() {
           return { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` };
         }
+        function esc(value) {
+          const d = document.createElement("div");
+          d.textContent = value == null ? "" : String(value);
+          return d.innerHTML;
+        }
+        const TIPOS = { credito: "Crédito", debito: "Débito" };
 
         // ---- Máscaras simples ----
         document.getElementById("reg-cpf").addEventListener("input", (e) => {
@@ -479,7 +533,14 @@
             clearMsg(msg);
             const button = e.target.querySelector(".btn");
 
+            const tipo = document.getElementById("cartao-tipo").value;
+            if (!tipo) {
+              showMsg(msg, "Selecione crédito ou débito.", "error");
+              return;
+            }
+
             const payload = {
+              tipo: tipo, // "credito" | "debito"
               numero_cartao: document
                 .getElementById("cartao-numero")
                 .value.replace(/\s/g, ""),
@@ -519,6 +580,41 @@
             }
           });
 
+        // ---------------- Remover cartão ----------------
+        async function removerCartao(id, button) {
+          if (!confirm("Remover este cartão?")) return;
+          const msg = document.getElementById("cartao-msg");
+          clearMsg(msg);
+          button.disabled = true;
+          button.textContent = "Removendo...";
+          try {
+            const res = await fetch(
+              `/webclient/pagamentos/${encodeURIComponent(id)}`,
+              { method: "DELETE", headers: authHeader() },
+            );
+            if (!res.ok) {
+              let detail = "";
+              try {
+                detail = (await res.json()).detail;
+              } catch (_) {}
+              showMsg(
+                msg,
+                detail || "Não foi possível remover o cartão.",
+                "error",
+              );
+              button.disabled = false;
+              button.textContent = "Remover";
+              return;
+            }
+            showMsg(msg, "Cartão removido.", "success");
+            await carregarCartoes();
+          } catch (err) {
+            showMsg(msg, "Não foi possível falar com o servidor.", "error");
+            button.disabled = false;
+            button.textContent = "Remover";
+          }
+        }
+
         // ---------------- Renderização ----------------
         function renderCartoes(cartoes) {
           const wrap = document.getElementById("cartoes-lista");
@@ -531,13 +627,25 @@
           empty.style.display = "none";
 
           for (const c of cartoes) {
+            const tipoLabel = TIPOS[c.tipo] || "";
+            const partes = [c.bandeira, tipoLabel, c.apelido].filter(Boolean);
             const div = document.createElement("div");
             div.className = "cartao-visual";
             div.innerHTML = `
-        <div class="bandeira">${c.bandeira}${c.apelido ? " · " + c.apelido : ""}</div>
-        <div class="numero">•••• •••• •••• ${c.ultimos_digitos}</div>
-        <div class="rodape"><span>${c.nome_titular}</span><span>${c.validade}</span></div>
+        <div class="bandeira">${esc(partes.join(" · "))}</div>
+        <div class="numero">•••• •••• •••• ${esc(c.ultimos_digitos)}</div>
+        <div class="rodape"><span>${esc(c.nome_titular)}</span><span>${esc(c.validade)}</span></div>
       `;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "cartao-remover";
+            btn.textContent = "Remover";
+            btn.setAttribute(
+              "aria-label",
+              `Remover cartão final ${c.ultimos_digitos}`,
+            );
+            btn.addEventListener("click", () => removerCartao(c.token, btn));
+            div.appendChild(btn);
             wrap.appendChild(div);
           }
         }
@@ -558,8 +666,8 @@
             const div = document.createElement("div");
             div.className = "estacao-item";
             div.innerHTML = `
-        <div class="info"><strong>${est.nome}</strong><span>${est.endereco}</span></div>
-        <div class="vagas">${est.vagas_disponiveis}/${est.capacidade_total} vagas</div>
+        <div class="info"><strong>${esc(est.nome)}</strong><span>${esc(est.endereco)}</span></div>
+        <div class="vagas">${esc(est.vagas_disponiveis)}/${esc(est.capacidade_total)} vagas</div>
       `;
             wrap.appendChild(div);
           }

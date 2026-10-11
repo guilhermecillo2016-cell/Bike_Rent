@@ -38,4 +38,6 @@ class CartaoORM:
     bandeira: str
     nome_titular: str
     validade: str
+    tipo: str
     apelido: Optional[str] = None
+    

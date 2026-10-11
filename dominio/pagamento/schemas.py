@@ -19,7 +19,7 @@ class CartaoCreate(BaseModel):
     validade: str = Field(pattern=r"^\d{2}/\d{2}$", description="Formato MM/AA")
     cvv: str = Field(min_length=3, max_length=4)
     apelido: Optional[str] = None
-
+    tipo: str = Field(default="crédito", description="crédito ou débito")
 
 class CartaoPublic(BaseModel):
     token: str
@@ -28,3 +28,4 @@ class CartaoPublic(BaseModel):
     nome_titular: str
     validade: str
     apelido: Optional[str] = None
+    tipo: str

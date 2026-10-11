@@ -75,6 +75,19 @@ def vincular_cartao(
 def meus_cartoes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
     return pagamento_service.listar_cartoes(usuario.email)
 
+@router.delete("/pagamentos/{token}", status_code=status.HTTP_204_NO_CONTENT)
+def remover_cartao(
+    token: str,
+    usuario: UsuarioORM = Depends(usuario_service.get_current_user)
+):
+    # O serviço deve lançar HTTPException(404) caso o cartão não exista ou não pertença ao usuário
+    removido = pagamento_service.remover_cartao(usuario.email, token)
+    if not removido:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Cartão não encontrado ou não pertence a este usuário."
+        )
+    
 
 # ------------------------------------------------------------------
 # Extra: listagem pública de estações (não é uma das 3 histórias,
@@ -84,3 +97,4 @@ def meus_cartoes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)
 @router.get("/estacoes", response_model=list[EstacaoPublic])
 def listar_estacoes_publico():
     return estacao_service.listar_estacoes()
+

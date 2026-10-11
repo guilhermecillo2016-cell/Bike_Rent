@@ -64,10 +64,19 @@ def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> CartaoORM:
         bandeira=resultado["bandeira"],
         nome_titular=dados.nome_titular,
         validade=dados.validade,
-        apelido=dados.apelido,
+        tipo=dados.tipo,
+        apelido=dados.apelido
+        
     )
     return repo.add_cartao(email_usuario, cartao)
 
 
 def listar_cartoes(email_usuario: str) -> list[CartaoORM]:
     return repo.list_cartoes(email_usuario)
+#Retorna falso se não encontrou o cartão ou se não pertence ao usuário, caso contrário remove e retorna verdadeiro
+def remover_cartao(email_usuario: str, token: str) -> bool:
+    cartao = repo.get_cartao(email_usuario, token)
+    if not cartao:
+        return False
+    repo.remover_cartao(email_usuario, cartao)
+    return True
