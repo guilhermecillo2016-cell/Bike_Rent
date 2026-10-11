@@ -82,12 +82,12 @@ form.active{display:block;}
 .field{margin-bottom:16px;}
 .field-row-2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
 .field label{display:block; font-size:0.85rem; font-weight:600; margin-bottom:6px;}
-.field input, .field textarea{
+.field input, .field textarea, .field select{
   width:100%; padding:11px 13px; border:1.5px solid var(--line); border-radius:var(--radius);
   font-size:0.96rem; font-family:inherit; background:#fff; color:var(--ink); transition:border-color .15s ease;
 }
 .field textarea{resize:vertical; min-height:60px;}
-.field input:focus-visible, .field textarea:focus-visible{
+.field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible{
   outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(47,143,78,0.15);
 }
 .field small{display:block; margin-top:6px; color:var(--slate); font-size:0.8rem;}

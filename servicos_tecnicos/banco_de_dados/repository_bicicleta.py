@@ -13,10 +13,18 @@ from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados.models import BicicletaORM
 
 
+def _novo_qr_code() -> str:
+    """Código aleatório (não dá para adivinhar a partir do id) e único."""
+    while True:
+        qr_code = "BIKE-" + uuid.uuid4().hex[:12].upper()
+        if get_by_qr(qr_code) is None:
+            return qr_code
+
+
 def create(estacao_id: int) -> BicicletaORM:
     bicicleta = BicicletaORM(
         id=memoria.proximo_id("bicicletas"),
-        qr_code="BIKE-" + uuid.uuid4().hex[:12].upper(),
+        qr_code=_novo_qr_code(),
         estacao_id=estacao_id,
     )
     memoria.bicicletas[bicicleta.id] = bicicleta

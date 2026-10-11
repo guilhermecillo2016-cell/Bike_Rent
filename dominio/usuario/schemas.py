@@ -29,6 +29,12 @@ class AdminCreate(BaseModel):
     senha: str = Field(min_length=6)
 
 
+class OperadorCreate(AdminCreate):
+    """Cadastro de operador de campo, feito por um administrador.
+    Mesmos campos do administrador (nome, e-mail e senha), sem matrícula:
+    o diagrama de projeto não tem esse campo em Usuario."""
+
+
 class UsuarioPublic(BaseModel):
     nome: str
     email: EmailStr

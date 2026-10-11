@@ -37,24 +37,11 @@ def create(
     return pagamento
 
 
-<<<<<<< HEAD
-def list_cartoes(email_usuario: str) -> list[CartaoORM]:
-    return memoria.cartoes.get(email_usuario, [])
 
-def remover_cartao(email_usuario: str, cartao: CartaoORM) -> None:
-    memoria.cartoes[email_usuario].remove(cartao)
-
-def get_cartao(email_usuario: str, token: str) -> CartaoORM:
-    for c in memoria.cartoes[email_usuario]:
-        if c.token == token:
-            return c
-    return None
-    
-=======
 def get_by_id(pagamento_id: int) -> Optional[PagamentoORM]:
     return memoria.pagamentos.get(pagamento_id)
 
 
 def list_all() -> list[PagamentoORM]:
     return list(memoria.pagamentos.values())
->>>>>>> 6e6ce97598c03c997dad33ecb678be4de0305799
+

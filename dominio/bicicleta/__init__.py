@@ -1,7 +1,7 @@
 """
 dominio/bicicleta
 --------------------
-Stub para o domínio "Bicicleta" do diagrama de arquitetura.
-Futuramente: cadastro e status das bicicletas (disponível, em uso,
-em manutenção), integrando com o serviço técnico IoT.
+Domínio "Bicicleta" do diagrama de arquitetura: cadastro, busca por QR
+Code e status (disponível, em uso, em manutenção, bloqueada). Fica a
+integração com o serviço técnico IoT para as próximas issues.
 """
