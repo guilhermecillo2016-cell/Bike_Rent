@@ -12,7 +12,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 
 from servicos_tecnicos.pagamentos import tokenizador
-from servicos_tecnicos.banco_de_dados import repository_pagamento as repo
+from servicos_tecnicos.banco_de_dados import repository_cartao as repo
 from servicos_tecnicos.banco_de_dados.models import CartaoORM
 from dominio.pagamento.schemas import CartaoCreate
 

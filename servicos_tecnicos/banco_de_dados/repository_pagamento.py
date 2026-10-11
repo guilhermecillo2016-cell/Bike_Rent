@@ -1,20 +1,45 @@
 """
 servicos_tecnicos/banco_de_dados/repository_pagamento.py
 -----------------------------------------------------------
-Armazenamento em memória dos métodos de pagamento tokenizados de
-cada usuário. Nunca guarda número completo de cartão nem CVV —
-apenas o que o tokenizador devolve (token, bandeira, últimos 4
-dígitos).
+Armazenamento em memória dos pagamentos (cobrança de uma corrida ou
+compra de um pacote de minutos). Os cartões tokenizados ficam em
+repository_cartao.py.
+
+A regra "exatamente um entre locacao_id e pacote_id" é validada no
+pagamento_service; aqui só se guarda.
 """
 
+from datetime import datetime
+from typing import Optional
+
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import CartaoORM
+from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
+from servicos_tecnicos.banco_de_dados.models import PagamentoORM
 
 
-def add_cartao(email_usuario: str, cartao: CartaoORM) -> CartaoORM:
-    memoria.cartoes.setdefault(email_usuario, []).append(cartao)
-    return cartao
+def create(
+    valor: float,
+    tipo: TipoPagamento,
+    locacao_id: Optional[int] = None,
+    pacote_id: Optional[int] = None,
+    token_cartao: Optional[str] = None,
+) -> PagamentoORM:
+    pagamento = PagamentoORM(
+        id=memoria.proximo_id("pagamentos"),
+        valor=valor,
+        tipo=tipo,
+        data_hora=datetime.now(),
+        locacao_id=locacao_id,
+        pacote_id=pacote_id,
+        token_cartao=token_cartao,
+    )
+    memoria.pagamentos[pagamento.id] = pagamento
+    return pagamento
 
 
-def list_cartoes(email_usuario: str) -> list[CartaoORM]:
-    return memoria.cartoes.get(email_usuario, [])
+def get_by_id(pagamento_id: int) -> Optional[PagamentoORM]:
+    return memoria.pagamentos.get(pagamento_id)
+
+
+def list_all() -> list[PagamentoORM]:
+    return list(memoria.pagamentos.values())

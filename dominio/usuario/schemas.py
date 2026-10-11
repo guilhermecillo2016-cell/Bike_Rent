@@ -10,6 +10,7 @@ from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 
+
 class UsuarioCreate(BaseModel):
     nome: str
     email: EmailStr
@@ -22,6 +23,7 @@ class UsuarioCreate(BaseModel):
 class AdminCreate(BaseModel):
     """Cadastro de administrador — só o essencial (Pessoa: nome/email/senha).
     Sem CPF/telefone: administrador não é um ciclista."""
+
     nome: str
     email: EmailStr
     senha: str = Field(min_length=6)
@@ -34,6 +36,7 @@ class UsuarioPublic(BaseModel):
     telefone: Optional[str] = None
     endereco: Optional[str] = None
     papel: PapelUsuario
+
 
 class Token(BaseModel):
     access_token: str
