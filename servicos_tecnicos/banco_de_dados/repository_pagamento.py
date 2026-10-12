@@ -37,9 +37,11 @@ def create(
     return pagamento
 
 
+
 def get_by_id(pagamento_id: int) -> Optional[PagamentoORM]:
     return memoria.pagamentos.get(pagamento_id)
 
 
 def list_all() -> list[PagamentoORM]:
     return list(memoria.pagamentos.values())
+

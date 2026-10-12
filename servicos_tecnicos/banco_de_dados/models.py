@@ -53,6 +53,7 @@ class CartaoORM:
     bandeira: str
     nome_titular: str
     validade: str
+    tipo: str
     apelido: Optional[str] = None
 
 
@@ -144,3 +145,4 @@ class PacoteMinutosORM:
     data_validade: datetime
     # False até o pagamento da compra ser aprovado
     ativo: bool = False
+
