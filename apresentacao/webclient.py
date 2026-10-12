@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 
-from apresentacao.exceptions import _resposta_indisponivel
+from apresentacao.exceptions import _resposta_indisponivel, _resposta_estacao_indisponivel
 
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
@@ -39,7 +39,13 @@ from dominio.pagamento import service as pagamento_service
 from dominio.estacao.schemas import EstacaoPublic
 from dominio.estacao import service as estacao_service
 
-from dominio.locacao.schemas import LocacaoCreate, LocacaoPublic, LocacaoAndamento
+from dominio.locacao.schemas import (
+    LocacaoCreate,
+    LocacaoPublic,
+    LocacaoAndamento,
+    LocacaoEncerrada,
+    EncerrarLocacaoRequest
+)
 from dominio.locacao import service as locacao_service
 
 
@@ -145,7 +151,25 @@ def iniciar_locacao(
 def corrida_ativa(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
     locacao = locacao_service.obter_locacao_ativa(usuario.email)
     return locacao_service.calcular_andamento(locacao)
-    
+
+#Finalizar corrida
+@router.post(
+    "/locacoes/encerrar",
+    response_model=LocacaoEncerrada,
+    responses={
+        404: {"description": "Sem corrida ativa ou estação inexistente"},
+        409: {"description": "Estação de destino lotada/inoperante (com sugestões)"},
+        503: {"description": "Travamento não confirmado"},
+    },
+)
+def encerrar_locacao(
+    dados: EncerrarLocacaoRequest,
+    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+):
+    try:
+        return locacao_service.encerrar_locacao(usuario.email, dados.estacao_id)
+    except locacao_service.EstacaoDestinoIndisponivel as e:
+        return _resposta_estacao_indisponivel(e)
 
 # ------------------------------------------------------------------
 # Extra: listagem pública de estações (não é uma das 3 histórias,
@@ -160,7 +184,7 @@ def listar_estacoes_publico():
 def catalogo_pacotes():
     return pacote_service.listar_catalogo()
  
- 
+#Rotas para os pacotes
 @router.post(
     "/pacotes",
     response_model=PacoteCompradoResponse,
