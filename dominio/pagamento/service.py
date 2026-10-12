@@ -20,26 +20,21 @@ from dominio.pagamento.schemas import CartaoCreate
 from servicos_tecnicos.pagamentos import gateway as gateway_simulado
 
 class PagamentoService:
-    TIPOS_SUPORTADOS = {TipoPagamento.CARTAO_CREDITO, TipoPagamento.CARTAO_DEBITO}
-    TIPOS_ADIADOS = {TipoPagamento.PIX}  # iteração 3
+    """Regras de pagamento (RF-12, RN-06, RN-07).
  
-    def __init__(self, pagamento_repo, cartao_repo, locacao_repo=None, gateway=None):
-        self.pagamento_repo = pagamento_repo
-        self.cartao_repo = cartao_repo
-        self.locacao_repo = locacao_repo
+    Os repositories e o gateway são módulos/objetos injetáveis; por padrão usa
+    os repositories em memória e o gateway simulado.
+    """
+ 
+    def __init__(
+        self, pagamento_repo=None, cartao_repo=None, locacao_repo=None, gateway=None
+    ):
+        self.pagamento_repo = pagamento_repo or repository_pagamento
+        self.cartao_repo = cartao_repo or repository_cartao
+        self.locacao_repo = locacao_repo  # opcional: sem ele, não checa a locação
         self.gateway = gateway or gateway_simulado
  
-    # --- Operações públicas -------------------------------------------
-    def criar_pagamento(self, dados, usuario_id):
-        """`usuario_id` vem do usuário autenticado, nunca do corpo da requisição."""
-        self._validar_destino(dados.locacao_id, dados.pacote_id)
-        self._validar_valor(dados.valor)
-        self._validar_tipo(dados.tipo)
-        self._validar_cartao(dados.cartao_id, usuario_id)
-        self._validar_locacao(dados.locacao_id)
-        self._validar_pacote(dados.pacote_id)
-        return self.pagamento_repo.create(dados)
- 
+    # --- Consultas ----------------------------------------------------
     def obter_pagamento(self, pagamento_id):
         pagamento = self.pagamento_repo.get_by_id(pagamento_id)
         if pagamento is None:
@@ -84,16 +79,16 @@ class PagamentoService:
         self._validar_destino(locacao_id, pacote_id)
         self._validar_valor(valor)
         cartao = self.exigir_cartao_credito(email)
-        resultado = self.gateway.cobrar(cartao.token, valor)  # APROVADO/RECUSADO
-        pagamento = PagamentoORM(
+        # O pagamento nasce PENDENTE; o status final vem do gateway.
+        pagamento = self.pagamento_repo.create(
             valor=valor,
             tipo=TipoPagamento.CARTAO_CREDITO,
-            status=resultado,
-            cartao_id=cartao.id,
             locacao_id=locacao_id,
             pacote_id=pacote_id,
+            token_cartao=cartao.token,
         )
-        return self.pagamento_repo.create(pagamento)
+        pagamento.status = self.gateway.cobrar(cartao.token, valor)
+        return pagamento
  
     # --- Validações ---------------------------------------------------
     @staticmethod
@@ -118,44 +113,6 @@ class PagamentoService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="O valor deve ser maior que zero",
-            )
- 
-    @classmethod
-    def _validar_tipo(cls, tipo):
-        try:
-            tipo = TipoPagamento(tipo)  # aceita o membro do enum ou seu valor
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tipo de pagamento inválido",
-            )
-        if tipo in cls.TIPOS_ADIADOS:
-            raise HTTPException(
-                status_code=status.HTTP_501_NOT_IMPLEMENTED,
-                detail=f"Pagamento via {tipo.name} ainda não está disponível",
-            )
-        if tipo not in cls.TIPOS_SUPORTADOS:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Tipo de pagamento não suportado",
-            )
- 
-    def _validar_cartao(self, cartao_id, usuario_id):
-        if cartao_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="cartao_id é obrigatório para pagamento com cartão",
-            )
-        cartao = self.cartao_repo.get_by_id(cartao_id)
-        if cartao is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Cartão não encontrado",
-            )
-        if cartao.usuario_id != usuario_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="O cartão não pertence ao usuário",
             )
  
     def _validar_locacao(self, locacao_id):

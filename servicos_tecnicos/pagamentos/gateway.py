@@ -7,7 +7,6 @@ Para testar o fluxo de recusa, use o cartão de teste cujo token é
 válido é APROVADO.
 """
 
-# Ajuste o caminho para onde os enums do diagrama estão no projeto.
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
 
 TOKEN_CARTAO_RECUSADO = "tok_test_recusado"
