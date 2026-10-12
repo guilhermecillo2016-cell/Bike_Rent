@@ -93,7 +93,7 @@ class BicicletaIndisponivel(Exception):
 
     def __init__(self, bicicleta: BicicletaORM, sugestoes : list[BicicletaORM]):
         self.bicicleta = bicicleta
-        self.segestoes = sugestoes
+        self.sugestoes = sugestoes
 
 def validar_qr(qr_code: str) -> BicicletaORM:
     bicicleta = get_by_qr(qr_code)
