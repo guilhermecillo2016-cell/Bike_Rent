@@ -22,3 +22,6 @@ class BicicletaPublic(BaseModel):
     status: StatusBicicleta
     estacao_id: int | None = None  # None enquanto estiver EM_USO
     bloqueio_pendente: bool
+
+class QrValidarRequest(BaseModel):
+    qr_code : str = Field(min_length=1)

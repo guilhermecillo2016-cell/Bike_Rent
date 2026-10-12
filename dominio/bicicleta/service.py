@@ -16,6 +16,7 @@ from typing import Optional
 
 from fastapi import HTTPException, status as http
 
+from dominio import bicicleta
 from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic
 from dominio.estacao import service as estacao_service
 from servicos_tecnicos.banco_de_dados import repository_bicicleta as repo
@@ -84,3 +85,22 @@ def listar_bicicletas(
     if estacao_id is not None:
         bicicletas = [b for b in bicicletas if b.estacao_id == estacao_id]
     return bicicletas
+
+
+class BicicletaIndisponivel(Exception):
+    """Bicicleta existe, mas não está apta (EM_USO, EM_MANUTENCAO ou
+    BLOQUEADA). Carrega as alternativas da mesma estação (extensão 3b)."""
+
+    def __init__(self, bicicleta: BicicletaORM, sugestoes : list[BicicletaORM]):
+        self.bicicleta = bicicleta
+        self.sugestoes = sugestoes
+
+def validar_qr(qr_code: str) -> BicicletaORM:
+    bicicleta = get_by_qr(qr_code)
+
+    if not bicicleta.apta_para_locacao():
+        sugestoes = []
+        if bicicleta.estacao_id is not None: #EM_USO não tem estação
+            sugestoes = [b for b in repo.list_by_estacao(bicicleta.estacao_id) if b.id != bicicleta.id and b.apta_para_locacao()]
+        raise BicicletaIndisponivel(bicicleta, sugestoes)
+    return bicicleta
