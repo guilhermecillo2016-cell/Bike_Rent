@@ -37,5 +37,5 @@ def list_all() -> list[PacoteMinutosORM]:
     return list(memoria.pacotes.values())
 
 
-def list_by_usuario(usuario_email: str) -> list[PacoteMinutosORM]:
+def list_by_email(usuario_email: str) -> list[PacoteMinutosORM]:
     return [p for p in memoria.pacotes.values() if p.usuario_email == usuario_email]

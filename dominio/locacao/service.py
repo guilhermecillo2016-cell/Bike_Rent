@@ -15,7 +15,7 @@ from dominio.bicicleta import service as bicicleta_service
 from dominio.estacao import service as estacao_service
 
 from dominio.pagamento import service as pagamento_service
-from dominio.pagamento import pacote_service
+from dominio.pacote import service as pacote_service
 
 from dominio.locacao.schemas import LocacaoPublic, LocacaoAndamento
 from dominio.locacao import tarifa
@@ -102,7 +102,7 @@ def calcular_andamento(locacao: LocacaoORM, agora: Optional[datetime] = None) ->
     segundos = max(0, int((agora - locacao.data_hora_inicio).total_seconds()))
     minutos = tarifa.minutos_iniciados(segundos)
 
-    saldo = pacote_service.saldo_minutos(locacao.usuario_email, agora)
+    saldo = pacote_service.saldo_minutos(locacao.usuario_email)
     abatidos = min(minutos, saldo)
     custo = tarifa.calcular_valor(minutos - abatidos)
 
