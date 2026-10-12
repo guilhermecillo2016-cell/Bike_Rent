@@ -565,12 +565,33 @@
           empty.style.display = "none";
 
           for (const est of estacoes) {
+            const operacional = est.status === "OPERACIONAL";
             const div = document.createElement("div");
-            div.className = "estacao-item";
-            div.innerHTML = `
-        <div class="info"><strong>${est.nome}</strong><span>${est.endereco}</span></div>
-        <div class="vagas">${est.vagas_disponiveis}/${est.capacidade_total} vagas</div>
-      `;
+            div.className = "estacao-item" + (operacional ? "" : " indisponivel");
+
+            const info = document.createElement("div");
+            info.className = "info";
+            const nome = document.createElement("strong");
+            nome.textContent = est.nome;
+            const endereco = document.createElement("span");
+            endereco.textContent = est.endereco;
+            info.append(nome, endereco);
+
+            const vagas = document.createElement("div");
+            vagas.className = "vagas";
+            const linhas = operacional
+              ? [
+                  `${est.bicicletas_disponiveis} ${est.bicicletas_disponiveis === 1 ? "bicicleta pronta" : "bicicletas prontas"}`,
+                  `${est.vagas_disponiveis}/${est.capacidade_total} vagas`,
+                ]
+              : [est.status === "BLOQUEADA" ? "Bloqueada" : "Em manutenção"];
+            for (const linha of linhas) {
+              const span = document.createElement("span");
+              span.textContent = linha;
+              vagas.appendChild(span);
+            }
+
+            div.append(info, vagas);
             wrap.appendChild(div);
           }
         }
