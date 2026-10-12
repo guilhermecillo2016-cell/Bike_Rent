@@ -11,6 +11,7 @@ separado do cadastro público (WebClient) e exige uma chave secreta
 
 import os
 import secrets
+from datetime import date
 from token import OP
 from typing import Optional
 
@@ -34,6 +35,9 @@ from dominio.bicicleta import service as bicicleta_service
 
 from dominio.auditoria.schemas import EventoAuditoriaPublic
 from dominio.auditoria import service as auditoria_service
+
+from dominio.relatorio.schemas import RelatorioAnalitico
+from dominio.relatorio import service as relatorio_service
 
 # Troque por uma variável de ambiente em produção:
 #   export ADMIN_SECRET="uma-chave-bem-secreta"
@@ -182,3 +186,16 @@ def listar_avarias(
 )
 def resolver_avaria(avaria_id: int, operador=Depends(somente_operador)):
     return avaria_service.to_public(avaria_service.resolver_avaria(avaria_id, operador.email))
+
+
+# ------------------------------------------------------------------
+# Monitorar desempenho (UC3, RN-11) — relatórios só do administrador.
+# ------------------------------------------------------------------
+@router.get("/relatorios", response_model=RelatorioAnalitico)
+def gerar_relatorio(
+    inicio: Optional[date] = None,
+    fim: Optional[date] = None,
+    estacao_id: Optional[int] = None,
+    _admin=Depends(somente_admin),
+):
+    return relatorio_service.gerar_relatorio(inicio, fim, estacao_id)
