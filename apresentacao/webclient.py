@@ -33,6 +33,9 @@ from dominio.pacote.schemas import (
 )
 from dominio.pacote import service as pacote_service
 
+from dominio.comprovante.schemas import ComprovantePublic
+from dominio.comprovante import service as comprovante_service
+
 from dominio.pagamento.schemas import CartaoCreate, CartaoPublic
 from dominio.pagamento import service as pagamento_service
 
@@ -222,3 +225,16 @@ def comprar_pacote(
 @router.get("/pacotes", response_model=list[PacoteResponse])
 def meus_pacotes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
     return pacote_service.listar_pacotes(usuario.email)
+
+
+#Comprovantes
+@router.get(
+    "/locacoes/{locacao_id}/comprovante",
+    response_model=ComprovantePublic,
+    responses={404: {"description" : "Comprovante não encontrado"}}
+)
+def obter_comprovante(
+    locacao_id: int,
+    usuario: UsuarioORM = Depends(usuario_service.get_current_user)
+):
+    return comprovante_service.obter_do_ciclista(locacao_id, usuario.email)

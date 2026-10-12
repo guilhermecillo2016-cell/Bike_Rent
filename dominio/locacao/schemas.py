@@ -53,3 +53,4 @@ class LocacaoEncerrada(BaseModel):
     cobranca_pendente: bool        # True se havia valor a cobrar e não foi aprovado
     bicicleta_em_manutencao: bool  # bloqueio agendado foi aplicado
     avaria_reportada: bool = False
+    comprovante_id: Optional[int] = None

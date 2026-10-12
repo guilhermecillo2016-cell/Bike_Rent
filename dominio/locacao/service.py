@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import Optional
 
 
-from dominio import locacao
 from dominio.bicicleta import service as bicicleta_service
 from dominio.estacao import service as estacao_service
 
@@ -21,6 +20,8 @@ from dominio.locacao.schemas import LocacaoPublic, LocacaoAndamento, LocacaoEnce
 from dominio.locacao import tarifa
 
 from dominio.avaria import service as avaria_service
+
+from dominio.comprovante import service as comprovante_service
 
 from servicos_tecnicos.banco_de_dados import repository_locacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao, StatusPagamento
@@ -207,6 +208,9 @@ def encerrar_locacao(
 
     pendente = valor > 0 and (pagamento is None or pagamento.status != StatusPagamento.APROVADO)
 
+    origem = estacao_service.obter_estacao(locacao.estacao_origem_id)
+    comprovante = comprovante_service.emitir(locacao, origem, destino, pagamento)
+
     return LocacaoEncerrada(
         locacao_id=locacao.id,
         bicicleta_id=locacao.bicicleta_id,
@@ -221,5 +225,6 @@ def encerrar_locacao(
         pagamento_status=pagamento.status if pagamento else None,
         cobranca_pendente=pendente,
         bicicleta_em_manutencao=bicicleta.status == StatusBicicleta.EM_MANUTENCAO,
-        avaria_reportada=avaria_reportada
+        avaria_reportada=avaria_reportada,
+        comprovante_id=comprovante.id
     )
