@@ -104,11 +104,18 @@ def register_user(dados: UsuarioCreate) -> UsuarioORM:
             detail="CPF inválido",
         )
 
+    cpf = re.sub(r"\D", "", dados.cpf)
+    if repo.get_by_cpf(cpf):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Já existe uma conta com esse CPF",
+        )
+
     return repo.create(
         nome=dados.nome,
         email=dados.email,
         senha_hash=get_password_hash(dados.senha),
-        cpf=re.sub(r"\D", "", dados.cpf),
+        cpf=cpf,
         telefone=dados.telefone,
         endereco=dados.endereco,
         papel=PapelUsuario.CICLISTA,

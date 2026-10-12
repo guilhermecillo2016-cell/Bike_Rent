@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 
+from apresentacao.exceptions import _resposta_indisponivel, _resposta_estacao_indisponivel
+
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
 
@@ -38,6 +40,16 @@ from dominio.estacao.schemas import EstacaoPublic
 from dominio.estacao import service as estacao_service
 from dominio.estacao import disponibilidade
 from dominio.estacao.schemas_disponibilidade import EstacaoDisponibilidade
+
+from dominio.locacao.schemas import (
+    LocacaoCreate,
+    LocacaoPublic,
+    LocacaoAndamento,
+    LocacaoEncerrada,
+    EncerrarLocacaoRequest
+)
+from dominio.locacao import service as locacao_service
+
 
 router = APIRouter(prefix="/webclient", tags=["WebClient"])
 
@@ -118,16 +130,48 @@ def validar_qr(
     try:
         bicicleta = bicicleta_service.validar_qr(dados.qr_code)
     except bicicleta_service.BicicletaIndisponivel as e:
-        return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT,
-            content={
-                "detail" : "Bicicleta indisponível por razões operacionais",
-                "sugestoes" : [bicicleta_service.to_public(b).model_dump(mode="json")
-                               for b in e.sugestoes]
-                }
-        )
+        return _resposta_indisponivel(e)
     return bicicleta_service.to_public(bicicleta)
-    
+
+#Inicio da corrida
+@router.post("/locacoes", response_model=LocacaoPublic, status_code=status.HTTP_201_CREATED)
+def iniciar_locacao(
+    dados: LocacaoCreate,
+    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+):
+    try:
+        locacao = locacao_service.iniciar_locacao(usuario.email, dados.qr_code)
+    except bicicleta_service.BicicletaIndisponivel as e:
+        return _resposta_indisponivel(e)
+    return locacao_service.to_public(locacao)
+
+@router.get(
+    "/locacoes/ativa",
+    response_model=LocacaoAndamento,
+    responses={404: {"description": "Sem corrida em andamento"}},
+)
+def corrida_ativa(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
+    locacao = locacao_service.obter_locacao_ativa(usuario.email)
+    return locacao_service.calcular_andamento(locacao)
+
+#Finalizar corrida
+@router.post(
+    "/locacoes/encerrar",
+    response_model=LocacaoEncerrada,
+    responses={
+        404: {"description": "Sem corrida ativa ou estação inexistente"},
+        409: {"description": "Estação de destino lotada/inoperante (com sugestões)"},
+        503: {"description": "Travamento não confirmado"},
+    },
+)
+def encerrar_locacao(
+    dados: EncerrarLocacaoRequest,
+    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+):
+    try:
+        return locacao_service.encerrar_locacao(usuario.email, dados.estacao_id)
+    except locacao_service.EstacaoDestinoIndisponivel as e:
+        return _resposta_estacao_indisponivel(e)
 
 # ------------------------------------------------------------------
 # Extra: listagem pública de estações (não é uma das 3 histórias,
@@ -156,7 +200,7 @@ def estacoes_proximas_com_vaga(
 def catalogo_pacotes():
     return pacote_service.listar_catalogo()
  
- 
+#Rotas para os pacotes
 @router.post(
     "/pacotes",
     response_model=PacoteCompradoResponse,
