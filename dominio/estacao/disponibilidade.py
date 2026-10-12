@@ -30,12 +30,7 @@ def _estacoes():
 
 def _bicicletas_disponiveis(estacao) -> int:
     # SUPOSIÇÃO: memoria.bicicletas = {id: BicicletaORM} com `estacao_id` e `status`.
-    return sum(
-        1
-        for b in memoria.bicicletas.values()
-        if b.estacao_id == estacao.id and b.status == StatusBicicleta.DISPONIVEL
-    )
-
+    return estacao.bicicletas_disponiveis  # já conta só as aptas para locação
 
 def _posicao(lat, lng, obrigatoria=False):
     if lat is None and lng is None:
