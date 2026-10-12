@@ -13,6 +13,7 @@ from fastapi import HTTPException, status
 
 from servicos_tecnicos.pagamentos import tokenizador
 from servicos_tecnicos.banco_de_dados import repository_cartao as repo
+from servicos_tecnicos.banco_de_dados import repository_pagamento
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
 from servicos_tecnicos.banco_de_dados.models import CartaoORM
 from servicos_tecnicos.banco_de_dados.models import PagamentoORM
@@ -30,7 +31,7 @@ class PagamentoService:
         self, pagamento_repo=None, cartao_repo=None, locacao_repo=None, gateway=None
     ):
         self.pagamento_repo = pagamento_repo or repository_pagamento
-        self.cartao_repo = cartao_repo or repository_cartao
+        self.cartao_repo = cartao_repo or repo
         self.locacao_repo = locacao_repo  # opcional: sem ele, não checa a locação
         self.gateway = gateway or gateway_simulado
  
