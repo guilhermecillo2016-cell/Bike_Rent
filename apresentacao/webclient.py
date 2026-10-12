@@ -11,9 +11,13 @@ ciclista ver onde há bicicletas disponíveis).
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.responses import JSONResponse
 
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+
+from dominio.bicicleta.schemas import BicicletaPublic, QrValidarRequest
+from dominio.bicicleta import service as bicicleta_service
 
 from dominio.usuario.schemas import UsuarioCreate, UsuarioPublic, Token
 from dominio.usuario import service as usuario_service
@@ -23,6 +27,7 @@ from dominio.pagamento import service as pagamento_service
 
 from dominio.estacao.schemas import EstacaoPublic
 from dominio.estacao import service as estacao_service
+
 
 router = APIRouter(prefix="/webclient", tags=["WebClient"])
 
@@ -88,6 +93,30 @@ def remover_cartao(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cartão não encontrado ou não pertence a este usuário."
         )
+
+#Validação de QRCode da Bicleta
+@router.post(
+        "/qr/validar",
+        response_model=BicicletaPublic,
+        responses={404: {"description" : "QR Code não encontrado"},
+                   409: {"description" : "Bicicleta Indisponível"}}
+)
+def validar_qr(
+    dados: QrValidarRequest,
+    _usuario: UsuarioORM = Depends(usuario_service.get_current_user())
+):
+    try:
+        bicicleta = bicicleta_service.validar_qr(dados.qr_code)
+    except bicicleta_service.BicicletaIndisponivel as e:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail" : "Bicicleta Indisponível por razões operacionais",
+                "sugestoes" : [bicicleta_service.to_public(b).model_dump(mode="json")
+                               for b in e.sugestoes]
+                }
+        )
+    return bicicleta_service.to_public(bicicleta)
     
 
 # ------------------------------------------------------------------
@@ -98,4 +127,3 @@ def remover_cartao(
 @router.get("/estacoes", response_model=list[EstacaoPublic])
 def listar_estacoes_publico():
     return [estacao_service.to_public(e) for e in estacao_service.listar_estacoes()]
-
