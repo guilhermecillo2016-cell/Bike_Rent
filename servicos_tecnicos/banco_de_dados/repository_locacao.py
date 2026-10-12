@@ -34,3 +34,10 @@ def get_by_id(locacao_id: int) -> Optional[LocacaoORM]:
 
 def list_all() -> list[LocacaoORM]:
     return list(memoria.locacoes.values())
+
+def get_ativa_by_usuario(usuario_email: str) -> Optional[LocacaoORM]:
+    return next(
+        (l for l in memoria.locacoes.values() 
+         if l.usuario_email and l.em_andamento),
+         None
+    )
