@@ -20,6 +20,8 @@ from dominio.pacote import service as pacote_service
 from dominio.locacao.schemas import LocacaoPublic, LocacaoAndamento, LocacaoEncerrada
 from dominio.locacao import tarifa
 
+from dominio.avaria import service as avaria_service
+
 from servicos_tecnicos.banco_de_dados import repository_locacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao, StatusPagamento
 from servicos_tecnicos.banco_de_dados.models import LocacaoORM
@@ -129,7 +131,10 @@ def calcular_andamento(locacao: LocacaoORM, agora: Optional[datetime] = None) ->
 
 
 def encerrar_locacao(
-    usuario_email: str, estacao_destino_id: int, agora: Optional[datetime] = None
+    usuario_email: str,
+    estacao_destino_id: int,
+    agora: Optional[datetime] = None,
+    descricao_avaria: Optional[str] = None
 ) -> LocacaoEncerrada:
     """Encerra a corrida (RF-09, RN-02, RN-05).
 
@@ -170,6 +175,10 @@ def encerrar_locacao(
     # 3) Devolve a bicicleta (já validado: não falha)
     estacao_service.alocar_bicicleta(destino.id, locacao.bicicleta_id)
     bicicleta = bicicleta_service.finalizar_uso(locacao.bicicleta_id)  # DISPONIVEL ou EM_MANUTENCAO
+
+    avaria_reportada = bool(descricao_avaria and descricao_avaria.strip())
+    if avaria_reportada:
+        avaria_service.reportar_avaria(usuario_email, bicicleta.id, descricao_avaria)
 
     # 4) Tarifa: abate o pacote e cobra só o excedente (RN-04/RN-05)
     fim = agora or datetime.now()
@@ -212,4 +221,5 @@ def encerrar_locacao(
         pagamento_status=pagamento.status if pagamento else None,
         cobranca_pendente=pendente,
         bicicleta_em_manutencao=bicicleta.status == StatusBicicleta.EM_MANUTENCAO,
+        avaria_reportada=avaria_reportada
     )

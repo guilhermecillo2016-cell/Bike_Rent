@@ -11,13 +11,17 @@ separado do cadastro público (WebClient) e exige uma chave secreta
 
 import os
 import secrets
+from token import OP
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
 from fastapi.security import OAuth2PasswordRequestForm
 
-from servicos_tecnicos.banco_de_dados.enums import PapelUsuario, StatusBicicleta
+from servicos_tecnicos.banco_de_dados.enums import PapelUsuario, StatusBicicleta, StatusAvaria
+
+from dominio.avaria.schemas import AvariaPublic
+from dominio.avaria import service as avaria_service
 
 from dominio.usuario.schemas import AdminCreate, OperadorCreate, UsuarioPublic, Token
 from dominio.usuario import service as usuario_service
@@ -49,6 +53,7 @@ PAPEIS_EQUIPE = (PapelUsuario.ADMINISTRADOR, PapelUsuario.OPERADOR_CAMPO)
 # Dependencies de permissão (ver usuario_service.requer_papel).
 somente_admin = usuario_service.requer_papel(PapelUsuario.ADMINISTRADOR)
 equipe = usuario_service.requer_papel(*PAPEIS_EQUIPE)
+somente_operador = usuario_service.requer_papel(PapelUsuario.OPERADOR_CAMPO)
 
 
 @router.post("/register", response_model=UsuarioPublic, status_code=status.HTTP_201_CREATED)
@@ -159,3 +164,21 @@ def alterar_status_estacao(
 @router.get("/auditoria", response_model=list[EventoAuditoriaPublic])
 def listar_auditoria(_admin=Depends(somente_admin)):
     return [auditoria_service.to_public(e) for e in auditoria_service.listar()]
+
+#Avarias
+@router.get(
+    "/avarias",
+    response_model=list[AvariaPublic]
+)
+def listar_avarias(
+    status_avaria: Optional[StatusAvaria] = Query(None, alias="status"),
+    _usuario=Depends(equipe)
+):
+    return [avaria_service.to_public(a) for a in avaria_service.listar_avarias(status_avaria)]
+
+@router.patch(
+    "/avarias/{avaria_id}/resolver",
+    response_model=AvariaPublic
+)
+def resolver_avaria(avaria_id: int, operador=Depends(somente_operador)):
+    return avaria_service.to_public(avaria_service.resolver_avaria(avaria_id, operador.email))
