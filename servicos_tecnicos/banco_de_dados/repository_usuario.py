@@ -17,6 +17,13 @@ def get_by_email(email: str) -> Optional[UsuarioORM]:
     return memoria.usuarios.get(email)
 
 
+def get_by_cpf(cpf: str) -> Optional[UsuarioORM]:
+    """Usuário dono do CPF (só números). Quem não tem CPF nunca casa."""
+    if not cpf:
+        return None
+    return next((u for u in memoria.usuarios.values() if u.cpf == cpf), None)
+
+
 def create(
     nome: str,
     email: str,

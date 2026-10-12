@@ -11,6 +11,7 @@ negócio.
 
 from fastapi import HTTPException, status as http
 
+from dominio.auditoria import service as auditoria_service
 from servicos_tecnicos.banco_de_dados import repository_bicicleta
 from servicos_tecnicos.banco_de_dados import repository_estacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
@@ -129,6 +130,23 @@ def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
 
     bicicleta.estacao_id = None
     return bicicleta
+
+
+def alterar_status_manual(
+    estacao_id: int, novo_status: StatusEstacao, usuario_email: str
+) -> EstacaoORM:
+    """Troca o status da estação à mão e registra na auditoria. 404 se não existe."""
+    estacao = obter_estacao(estacao_id)
+    novo_status = StatusEstacao(novo_status)
+    if novo_status == estacao.status:
+        return estacao
+
+    anterior = str(estacao.status)
+    estacao.status = novo_status
+    auditoria_service.registrar(
+        usuario_email, "ESTACAO", estacao.id, anterior, str(novo_status)
+    )
+    return estacao
 
 
 def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:

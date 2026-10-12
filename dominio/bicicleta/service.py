@@ -17,10 +17,12 @@ from typing import Optional
 from fastapi import HTTPException, status as http
 
 from dominio import bicicleta
+from dominio.auditoria import service as auditoria_service
 from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic
 from dominio.estacao import service as estacao_service
+from servicos_tecnicos.banco_de_dados import repository_avaria
 from servicos_tecnicos.banco_de_dados import repository_bicicleta as repo
-from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta
+from servicos_tecnicos.banco_de_dados.enums import StatusAvaria, StatusBicicleta
 from servicos_tecnicos.banco_de_dados.models import BicicletaORM
 
 
@@ -72,6 +74,77 @@ def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> BicicletaORM:
     """
     bicicleta = obter_bicicleta(bicicleta_id)
     bicicleta.status = StatusBicicleta(novo_status)  # valor inválido -> ValueError
+    return bicicleta
+
+
+def _tem_avaria_pendente(bicicleta_id: int) -> bool:
+    avarias = repository_avaria.list_by_bicicleta(bicicleta_id)
+    return any(a.status != StatusAvaria.RESOLVIDO for a in avarias)
+
+
+def alterar_status_manual(
+    bicicleta_id: int, novo_status: StatusBicicleta, usuario_email: str
+) -> BicicletaORM:
+    """Troca o status à mão (administrador ou operador) e registra na auditoria.
+
+    Bicicleta em corrida não muda na hora: o bloqueio fica agendado
+    (bloqueio_pendente) e é aplicado quando a corrida terminar.
+    404 se não existe; 400 se pedirem EM_USO; 409 se tentarem liberar uma
+    bicicleta em corrida ou com avaria pendente.
+    """
+    bicicleta = obter_bicicleta(bicicleta_id)
+    novo_status = StatusBicicleta(novo_status)
+
+    if novo_status == StatusBicicleta.EM_USO:
+        raise HTTPException(
+            status_code=http.HTTP_400_BAD_REQUEST,
+            detail="Uma bicicleta só entra em uso por uma locação",
+        )
+    if novo_status == bicicleta.status:
+        return bicicleta
+
+    anterior = str(bicicleta.status)
+
+    if bicicleta.status == StatusBicicleta.EM_USO:
+        if novo_status == StatusBicicleta.DISPONIVEL:
+            raise HTTPException(
+                status_code=http.HTTP_409_CONFLICT,
+                detail="A bicicleta está em corrida e não pode ser liberada agora",
+            )
+        if not bicicleta.bloqueio_pendente:
+            bicicleta.bloqueio_pendente = True
+            auditoria_service.registrar(
+                usuario_email, "BICICLETA", bicicleta.id,
+                anterior, f"{StatusBicicleta.EM_MANUTENCAO} (agendado)",
+            )
+        return bicicleta
+
+    if novo_status == StatusBicicleta.DISPONIVEL and _tem_avaria_pendente(bicicleta.id):
+        raise HTTPException(
+            status_code=http.HTTP_409_CONFLICT,
+            detail="A bicicleta tem avaria pendente. Resolva a avaria antes de liberá-la",
+        )
+
+    bicicleta.status = novo_status
+    auditoria_service.registrar(
+        usuario_email, "BICICLETA", bicicleta.id, anterior, str(novo_status)
+    )
+    return bicicleta
+
+
+def finalizar_uso(bicicleta_id: int) -> BicicletaORM:
+    """Chamada ao encerrar a corrida: a bicicleta volta a DISPONIVEL, ou vai
+    para EM_MANUTENCAO se houver bloqueio agendado (que então é limpo)."""
+    bicicleta = obter_bicicleta(bicicleta_id)
+    if bicicleta.bloqueio_pendente:
+        bicicleta.bloqueio_pendente = False
+        bicicleta.status = StatusBicicleta.EM_MANUTENCAO
+        auditoria_service.registrar(
+            "sistema", "BICICLETA", bicicleta.id,
+            str(StatusBicicleta.EM_USO), str(StatusBicicleta.EM_MANUTENCAO),
+        )
+    else:
+        bicicleta.status = StatusBicicleta.DISPONIVEL
     return bicicleta
 
 

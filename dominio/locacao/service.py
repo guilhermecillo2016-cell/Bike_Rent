@@ -5,8 +5,6 @@ Regras de negócio do domínio Locacao: início da corrida (RF-07, RN-01,
 RN-06, extensão 4-5a). O domínio depende só da interface da trava.
 """
 
-from curses.ascii import HT
-
 from fastapi import HTTPException, status as http
 from datetime import datetime
 from typing import Optional

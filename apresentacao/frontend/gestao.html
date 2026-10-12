@@ -287,6 +287,7 @@
                 <th>Bicicletas</th>
                 <th>Vagas</th>
                 <th>Status</th>
+                <th>Ação</th>
               </tr>
             </thead>
             <tbody id="estacoes-table-body"></tbody>
@@ -294,6 +295,7 @@
           <div class="empty-state" id="estacoes-empty" style="display: none">
             Nenhuma estação cadastrada ainda.
           </div>
+          <div class="msg" id="acao-estacao-msg"></div>
 
           <!-- Bicicletas: a equipe vê a lista; só o administrador cadastra -->
           <div id="bloco-bicicletas" style="margin-top: 32px">
@@ -326,12 +328,43 @@
                   <th>QR Code</th>
                   <th>Status</th>
                   <th>Estação</th>
+                  <th>Ação</th>
                 </tr>
               </thead>
               <tbody id="bicicletas-table-body"></tbody>
             </table>
             <div class="empty-state" id="bicicletas-empty" style="display: none">
               Nenhuma bicicleta cadastrada ainda.
+            </div>
+            <div class="msg" id="acao-bicicleta-msg"></div>
+          </div>
+
+          <!-- Histórico de auditoria: só administrador -->
+          <div id="bloco-auditoria" style="display: none; margin-top: 32px">
+            <div class="toolbar">
+              <h2>Histórico de auditoria</h2>
+              <button class="btn secondary" id="refresh-auditoria-btn" type="button">
+                Atualizar
+              </button>
+            </div>
+            <p class="sub">
+              Toda mudança manual de status de bicicleta ou estação fica
+              registrada aqui.
+            </p>
+            <table class="data-table" id="auditoria-table" style="display: none">
+              <thead>
+                <tr>
+                  <th>Quando</th>
+                  <th>Quem</th>
+                  <th>O quê</th>
+                  <th>De</th>
+                  <th>Para</th>
+                </tr>
+              </thead>
+              <tbody id="auditoria-table-body"></tbody>
+            </table>
+            <div class="empty-state" id="auditoria-empty">
+              Nenhuma alteração registrada ainda.
             </div>
           </div>
 
@@ -603,9 +636,140 @@
               td.textContent = texto;
               tr.appendChild(td);
             }
+            tr.appendChild(
+              celulaAcao(ROTULO_STATUS_ESTACAO, est.status, (status, botao) =>
+                alterarStatusEstacao(est.id, status, botao),
+              ),
+            );
             tbody.appendChild(tr);
           }
         }
+
+        // ---------------- Alterar status (UC2) ----------------
+        let papelAtual = null;
+
+        const OPCOES_STATUS_BICICLETA = {
+          DISPONIVEL: "Disponível",
+          EM_MANUTENCAO: "Em manutenção",
+          BLOQUEADA: "Bloqueada",
+        };
+
+        function celulaAcao(opcoes, statusAtual, aoAplicar) {
+          const td = document.createElement("td");
+          const select = document.createElement("select");
+          for (const [valor, rotulo] of Object.entries(opcoes)) {
+            const opt = document.createElement("option");
+            opt.value = valor;
+            opt.textContent = rotulo;
+            select.appendChild(opt);
+          }
+          select.value = statusAtual in opcoes ? statusAtual : Object.keys(opcoes)[0];
+          const botao = document.createElement("button");
+          botao.type = "button";
+          botao.className = "btn secondary";
+          botao.textContent = "Aplicar";
+          botao.addEventListener("click", () => aoAplicar(select.value, botao));
+          td.append(select, botao);
+          return td;
+        }
+
+        async function enviarStatus(url, status, msgId, botao) {
+          const msg = document.getElementById(msgId);
+          clearMsg(msg);
+          botao.disabled = true;
+          try {
+            const res = await fetch(url, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json", ...authHeader() },
+              body: JSON.stringify({ status }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+              showMsg(msg, data.detail || "Não foi possível alterar o status.", "error");
+              return null;
+            }
+            return data;
+          } catch (err) {
+            showMsg(msg, "Não foi possível falar com o servidor.", "error");
+            return null;
+          } finally {
+            botao.disabled = false;
+          }
+        }
+
+        async function recarregarTudo() {
+          await carregarEstacoes();
+          await carregarBicicletas();
+          await carregarAuditoria();
+        }
+
+        async function alterarStatusBicicleta(id, status, botao) {
+          const data = await enviarStatus(
+            `/adminweb/bicicletas/${id}/status`, status, "acao-bicicleta-msg", botao,
+          );
+          if (!data) return;
+          const agendado = data.status === "EM_USO" && data.bloqueio_pendente;
+          showMsg(
+            document.getElementById("acao-bicicleta-msg"),
+            agendado
+              ? "A bicicleta está em corrida. Ela será colocada em manutenção quando a corrida terminar."
+              : "Status da bicicleta atualizado.",
+            "success",
+          );
+          await recarregarTudo();
+        }
+
+        async function alterarStatusEstacao(id, status, botao) {
+          const data = await enviarStatus(
+            `/adminweb/estacoes/${id}/status`, status, "acao-estacao-msg", botao,
+          );
+          if (!data) return;
+          showMsg(document.getElementById("acao-estacao-msg"), "Status da estação atualizado.", "success");
+          await recarregarTudo();
+        }
+
+        // ---------------- Histórico de auditoria (só administrador) ----------------
+        function rotuloAuditoria(texto) {
+          const [base, resto] = texto.split(" (");
+          const rotulo = ROTULO_STATUS[base] || ROTULO_STATUS_ESTACAO[base] || base;
+          return resto ? `${rotulo} (${resto}` : rotulo;
+        }
+
+        function renderAuditoria(eventos) {
+          const tbody = document.getElementById("auditoria-table-body");
+          const table = document.getElementById("auditoria-table");
+          const empty = document.getElementById("auditoria-empty");
+          tbody.innerHTML = "";
+          table.style.display = eventos.length ? "table" : "none";
+          empty.style.display = eventos.length ? "none" : "block";
+
+          for (const e of eventos) {
+            const tr = document.createElement("tr");
+            const celulas = [
+              new Date(e.data_hora).toLocaleString("pt-BR"),
+              e.usuario_email,
+              `${e.tipo_entidade === "BICICLETA" ? "Bicicleta" : "Estação"} ${e.entidade_id}`,
+              rotuloAuditoria(e.status_anterior),
+              rotuloAuditoria(e.status_novo),
+            ];
+            for (const texto of celulas) {
+              const td = document.createElement("td");
+              td.textContent = texto;
+              tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+          }
+        }
+
+        async function carregarAuditoria() {
+          if (papelAtual !== "ADMINISTRADOR") return;
+          const res = await fetch("/adminweb/auditoria", { headers: authHeader() });
+          if (res.ok) renderAuditoria(await res.json());
+        }
+
+        document
+          .getElementById("refresh-auditoria-btn")
+          .addEventListener("click", carregarAuditoria);
 
         let estacoesCache = [];
 
@@ -659,7 +823,8 @@
             const celulas = [
               b.id,
               b.qr_code,
-              ROTULO_STATUS[b.status] || b.status,
+              (ROTULO_STATUS[b.status] || b.status) +
+                (b.bloqueio_pendente ? " (bloqueio agendado)" : ""),
               b.estacao_id == null ? "Em corrida" : nomeDaEstacao(b.estacao_id),
             ];
             for (const texto of celulas) {
@@ -667,6 +832,11 @@
               td.textContent = texto;
               tr.appendChild(td);
             }
+            tr.appendChild(
+              celulaAcao(OPCOES_STATUS_BICICLETA, b.status, (status, botao) =>
+                alterarStatusBicicleta(b.id, status, botao),
+              ),
+            );
             tbody.appendChild(tr);
           }
         }
@@ -775,12 +945,16 @@
               : "none";
             document.getElementById("bloco-bicicleta-form").style.display =
               ehAdmin ? "block" : "none";
+            document.getElementById("bloco-auditoria").style.display =
+              ehAdmin ? "block" : "none";
+            papelAtual = me.papel;
             document.getElementById("admin-email").textContent =
               `${me.email} (${ROTULO_PAPEL[me.papel]})`;
             cardLogin.style.display = "none";
             cardDashboard.style.display = "block";
             await carregarEstacoes();
             await carregarBicicletas();
+            await carregarAuditoria();
           } catch (err) {
             cardLogin.style.display = "block";
             cardDashboard.style.display = "none";

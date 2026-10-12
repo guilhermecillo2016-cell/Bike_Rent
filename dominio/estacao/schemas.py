@@ -16,6 +16,10 @@ class EstacaoCreate(BaseModel):
     capacidade_total: int = Field(gt=0)
 
 
+class StatusEstacaoUpdate(BaseModel):
+    status: StatusEstacao
+
+
 class EstacaoPublic(BaseModel):
     id: int
     nome: str

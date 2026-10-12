@@ -16,6 +16,10 @@ class BicicletaCreate(BaseModel):
     estacao_id: int = Field(gt=0)
 
 
+class StatusBicicletaUpdate(BaseModel):
+    status: StatusBicicleta
+
+
 class BicicletaPublic(BaseModel):
     id: int
     qr_code: str

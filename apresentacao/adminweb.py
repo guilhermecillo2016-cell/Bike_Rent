@@ -22,11 +22,14 @@ from servicos_tecnicos.banco_de_dados.enums import PapelUsuario, StatusBicicleta
 from dominio.usuario.schemas import AdminCreate, OperadorCreate, UsuarioPublic, Token
 from dominio.usuario import service as usuario_service
 
-from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
+from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic, StatusEstacaoUpdate
 from dominio.estacao import service as estacao_service
 
-from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic
+from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic, StatusBicicletaUpdate
 from dominio.bicicleta import service as bicicleta_service
+
+from dominio.auditoria.schemas import EventoAuditoriaPublic
+from dominio.auditoria import service as auditoria_service
 
 # Troque por uma variável de ambiente em produção:
 #   export ADMIN_SECRET="uma-chave-bem-secreta"
@@ -125,3 +128,34 @@ def listar_bicicletas(
 ):
     bicicletas = bicicleta_service.listar_bicicletas(status_bicicleta, estacao_id)
     return [bicicleta_service.to_public(b) for b in bicicletas]
+
+
+# ------------------------------------------------------------------
+# Gerenciar frota (UC2) — status manual, com auditoria. Administrador e
+# operador alteram; só o administrador consulta o histórico.
+# ------------------------------------------------------------------
+@router.patch("/bicicletas/{bicicleta_id}/status", response_model=BicicletaPublic)
+def alterar_status_bicicleta(
+    bicicleta_id: int,
+    dados: StatusBicicletaUpdate,
+    usuario=Depends(equipe),
+):
+    bicicleta = bicicleta_service.alterar_status_manual(
+        bicicleta_id, dados.status, usuario.email
+    )
+    return bicicleta_service.to_public(bicicleta)
+
+
+@router.patch("/estacoes/{estacao_id}/status", response_model=EstacaoPublic)
+def alterar_status_estacao(
+    estacao_id: int,
+    dados: StatusEstacaoUpdate,
+    usuario=Depends(equipe),
+):
+    estacao = estacao_service.alterar_status_manual(estacao_id, dados.status, usuario.email)
+    return estacao_service.to_public(estacao)
+
+
+@router.get("/auditoria", response_model=list[EventoAuditoriaPublic])
+def listar_auditoria(_admin=Depends(somente_admin)):
+    return [auditoria_service.to_public(e) for e in auditoria_service.listar()]
