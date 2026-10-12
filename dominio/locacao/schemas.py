@@ -18,3 +18,14 @@ class LocacaoPublic(BaseModel):
     estacao_origem_id: int
     data_hora_inicio: datetime
     em_andamento: bool
+
+class LocacaoAndamento(BaseModel):
+    locacao_id: int
+    bicicleta_id: int
+    estacao_origem_id: int
+    estacao_origem_nome: str
+    data_hora_inicio: datetime
+    duracao_segundos: int
+    duracao_minutos: int          # minutos iniciados (teto), base da tarifa
+    minutos_pacote: int           # quanto do saldo do pacote cobriria a corrida
+    custo_estimado: float         # só o excedente, já descontado o pacote

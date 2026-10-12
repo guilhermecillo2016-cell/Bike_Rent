@@ -30,7 +30,7 @@ from dominio.pagamento import service as pagamento_service
 from dominio.estacao.schemas import EstacaoPublic
 from dominio.estacao import service as estacao_service
 
-from dominio.locacao.schemas import LocacaoCreate, LocacaoPublic
+from dominio.locacao.schemas import LocacaoCreate, LocacaoPublic, LocacaoAndamento
 from dominio.locacao import service as locacao_service
 
 
@@ -127,6 +127,15 @@ def iniciar_locacao(
     except bicicleta_service.BicicletaIndisponivel as e:
         return _resposta_indisponivel(e)
     return locacao_service.to_public(locacao)
+
+@router.get(
+    "/locacoes/ativa",
+    response_model=LocacaoAndamento,
+    responses={404: {"description": "Sem corrida em andamento"}},
+)
+def corrida_ativa(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
+    locacao = locacao_service.obter_locacao_ativa(usuario.email)
+    return locacao_service.calcular_andamento(locacao)
     
 
 # ------------------------------------------------------------------
