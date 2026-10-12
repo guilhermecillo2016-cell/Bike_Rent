@@ -103,7 +103,7 @@ def remover_cartao(
 )
 def validar_qr(
     dados: QrValidarRequest,
-    _usuario: UsuarioORM = Depends(usuario_service.get_current_user())
+    _usuario: UsuarioORM = Depends(usuario_service.get_current_user)
 ):
     try:
         bicicleta = bicicleta_service.validar_qr(dados.qr_code)
