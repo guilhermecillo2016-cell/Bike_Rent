@@ -29,3 +29,10 @@ def get_cartao(email_usuario: str, token: str) -> CartaoORM:
         if c.token == token:
             return c
     return None
+
+def get_credito_by_email(email_usuario: str) -> CartaoORM:
+    """Retorna o cartão de crédito do usuário, ou None se não houver."""
+    for c in memoria.cartoes.get(email_usuario, []):
+        if c.tipo == "CARTAO_CREDITO":
+            return c
+    return None
