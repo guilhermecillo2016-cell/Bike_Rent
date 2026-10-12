@@ -13,6 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 
+from apresentacao.exceptions import _resposta_indisponivel
+
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
 
@@ -27,6 +29,9 @@ from dominio.pagamento import service as pagamento_service
 
 from dominio.estacao.schemas import EstacaoPublic
 from dominio.estacao import service as estacao_service
+
+from dominio.locacao.schemas import LocacaoCreate, LocacaoPublic
+from dominio.locacao import service as locacao_service
 
 
 router = APIRouter(prefix="/webclient", tags=["WebClient"])
@@ -108,15 +113,20 @@ def validar_qr(
     try:
         bicicleta = bicicleta_service.validar_qr(dados.qr_code)
     except bicicleta_service.BicicletaIndisponivel as e:
-        return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT,
-            content={
-                "detail" : "Bicicleta indisponível por razões operacionais",
-                "sugestoes" : [bicicleta_service.to_public(b).model_dump(mode="json")
-                               for b in e.sugestoes]
-                }
-        )
+        return _resposta_indisponivel(e)
     return bicicleta_service.to_public(bicicleta)
+
+#Inicio da corrida
+@router.post("/locacoes", response_model=LocacaoPublic, status_code=status.HTTP_201_CREATED)
+def iniciar_locacao(
+    dados: LocacaoCreate,
+    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+):
+    try:
+        locacao = locacao_service.iniciar_locacao(usuario.email, dados.qr_code)
+    except bicicleta_service.BicicletaIndisponivel as e:
+        return _resposta_indisponivel(e)
+    return locacao_service.to_public(locacao)
     
 
 # ------------------------------------------------------------------
