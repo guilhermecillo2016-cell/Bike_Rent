@@ -284,7 +284,9 @@
                 <th>Nome</th>
                 <th>Endereço</th>
                 <th>Coordenadas</th>
+                <th>Bicicletas</th>
                 <th>Vagas</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody id="estacoes-table-body"></tbody>
@@ -566,6 +568,12 @@
           .addEventListener("click", carregarEstacoes);
 
         // ---------------- Renderização ----------------
+        const ROTULO_STATUS_ESTACAO = {
+          OPERACIONAL: "Operacional",
+          BLOQUEADA: "Bloqueada",
+          EM_MANUTENCAO: "Em manutenção",
+        };
+
         function renderEstacoes(estacoes) {
           const tbody = document.getElementById("estacoes-table-body");
           const table = document.getElementById("estacoes-table");
@@ -582,12 +590,19 @@
 
           for (const est of estacoes) {
             const tr = document.createElement("tr");
-            tr.innerHTML = `
-        <td>${est.nome}</td>
-        <td>${est.endereco}</td>
-        <td>${est.latitude.toFixed(4)}, ${est.longitude.toFixed(4)}</td>
-        <td>${est.vagas_disponiveis}/${est.capacidade_total}</td>
-      `;
+            const celulas = [
+              est.nome,
+              est.endereco,
+              `${est.latitude.toFixed(4)}, ${est.longitude.toFixed(4)}`,
+              est.bicicletas_disponiveis,
+              `${est.vagas_disponiveis}/${est.capacidade_total}`,
+              ROTULO_STATUS_ESTACAO[est.status] || est.status,
+            ];
+            for (const texto of celulas) {
+              const td = document.createElement("td");
+              td.textContent = texto;
+              tr.appendChild(td);
+            }
             tbody.appendChild(tr);
           }
         }

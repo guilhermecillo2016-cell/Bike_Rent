@@ -5,6 +5,7 @@ Schemas do domínio Estacao — História "Criar Estação" (2).
 """
 
 from pydantic import BaseModel, Field
+from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
 
 
 class EstacaoCreate(BaseModel):
@@ -23,3 +24,5 @@ class EstacaoPublic(BaseModel):
     longitude: float
     capacidade_total: int
     vagas_disponiveis: int
+    status: StatusEstacao
+    bicicletas_disponiveis: int

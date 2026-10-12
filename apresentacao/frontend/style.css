@@ -150,7 +150,10 @@ form.active{display:block;}
 .estacao-item:last-child{border-bottom:none;}
 .estacao-item .info strong{display:block; font-size:0.96rem;}
 .estacao-item .info span{color:var(--slate); font-size:0.85rem;}
-.estacao-item .vagas{font-weight:600; color:var(--green-dark); font-size:0.9rem; white-space:nowrap;}
+.estacao-item .vagas{font-weight:600; color:var(--green-dark); font-size:0.9rem; white-space:nowrap; text-align:right;}
+.estacao-item .vagas span{display:block;}
+.estacao-item.indisponivel .info{opacity:0.6;}
+.estacao-item.indisponivel .vagas{color:var(--slate);}
 
 .empty-state{text-align:center; padding:28px 12px; color:var(--slate); font-size:0.9rem;}
 

@@ -14,13 +14,19 @@ from fastapi import HTTPException, status as http
 from servicos_tecnicos.banco_de_dados import repository_bicicleta
 from servicos_tecnicos.banco_de_dados import repository_estacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
-from servicos_tecnicos.banco_de_dados.models import EstacaoORM
+from servicos_tecnicos.banco_de_dados.models import BicicletaORM, EstacaoORM
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
+
 
 def vagas_disponiveis(estacao: EstacaoORM) -> int:
     """Vagas livres = capacidade - bicicletas cujo estacao_id é esta estação."""
     ocupadas = len(repository_bicicleta.list_by_estacao(estacao.id))
     return estacao.capacidade_total - ocupadas
+
+
+def bicicletas_disponiveis(estacao: EstacaoORM) -> int:
+    bicicletas = repository_bicicleta.list_by_estacao(estacao.id)
+    return sum(1 for b in bicicletas if b.apta_para_locacao())
 
 
 def to_public(estacao: EstacaoORM) -> EstacaoPublic:
@@ -32,6 +38,8 @@ def to_public(estacao: EstacaoORM) -> EstacaoPublic:
         longitude=estacao.longitude,
         capacidade_total=estacao.capacidade_total,
         vagas_disponiveis=vagas_disponiveis(estacao),
+        bicicletas_disponiveis=bicicletas_disponiveis(estacao),
+        status=estacao.status,
     )
 
 
@@ -76,6 +84,53 @@ def possui_vaga_livre(estacao_id: int) -> bool:
     )
 
 
+def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
+    """Estaciona a bicicleta na estação. 404 se algum dos dois não existe;
+    409 se a estação não aceita ou se a bicicleta já está em outra."""
+    exigir_vaga_livre(estacao_id)
+
+    bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
+    if bicicleta is None:
+        raise HTTPException(
+            status_code=http.HTTP_404_NOT_FOUND,
+            detail="Bicicleta não encontrada",
+        )
+    if bicicleta.estacao_id is not None:
+        raise HTTPException(
+            status_code=http.HTTP_409_CONFLICT,
+            detail="A bicicleta já está em uma estação",
+        )
+
+    bicicleta.estacao_id = estacao_id
+    return bicicleta
+
+
+def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
+    """Tira a bicicleta da estação. 404 se ela não existe; 409 se não está em
+    nenhuma estação ou se a estação dela não está operacional."""
+    bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
+    if bicicleta is None:
+        raise HTTPException(
+            status_code=http.HTTP_404_NOT_FOUND,
+            detail="Bicicleta não encontrada",
+        )
+    if bicicleta.estacao_id is None:
+        raise HTTPException(
+            status_code=http.HTTP_409_CONFLICT,
+            detail="A bicicleta não está em nenhuma estação",
+        )
+
+    estacao = obter_estacao(bicicleta.estacao_id)
+    if estacao.status != StatusEstacao.OPERACIONAL:
+        raise HTTPException(
+            status_code=http.HTTP_409_CONFLICT,
+            detail="A estação não está operacional",
+        )
+
+    bicicleta.estacao_id = None
+    return bicicleta
+
+
 def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:
     return repo.create(
         nome=dados.nome,
@@ -88,3 +143,4 @@ def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:
 
 def listar_estacoes() -> list[EstacaoORM]:
     return repo.list_all()
+
