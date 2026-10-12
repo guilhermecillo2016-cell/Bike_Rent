@@ -80,7 +80,7 @@ def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> BicicletaORM:
 def _tem_avaria_pendente(bicicleta_id: int) -> bool:
     avarias = repository_avaria.list_by_bicicleta(bicicleta_id)
     return any(a.status != StatusAvaria.RESOLVIDO for a in avarias)
-
+tem_avaria_pendente = _tem_avaria_pendente
 
 def alterar_status_manual(
     bicicleta_id: int, novo_status: StatusBicicleta, usuario_email: str

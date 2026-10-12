@@ -110,6 +110,10 @@ class ReporteAvariaORM:
     bicicleta_id: int
     status: StatusAvaria = StatusAvaria.PENDENTE
 
+    def resolver(self) -> None:
+        self.status = StatusAvaria.RESOLVIDO
+
+
 
 @dataclass
 class ComprovanteORM:

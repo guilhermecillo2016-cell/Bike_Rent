@@ -3,6 +3,7 @@ dominio/locacao/schemas.py
 ----------------------------
 Schemas do domínio Locacao — início de corrida (B3).
 """
+from token import OP
 from typing import Optional
 
 from datetime import datetime
@@ -35,6 +36,7 @@ class LocacaoAndamento(BaseModel):
 
 class EncerrarLocacaoRequest(BaseModel):
     estacao_id: int = Field(gt=0)
+    descricao_avaria: Optional[str] = Field(default=True, max_length=500)
 
 class LocacaoEncerrada(BaseModel):
     locacao_id: int
@@ -50,3 +52,4 @@ class LocacaoEncerrada(BaseModel):
     pagamento_status: Optional[StatusPagamento] = None  # None = nada cobrado/cobrança não feita
     cobranca_pendente: bool        # True se havia valor a cobrar e não foi aprovado
     bicicleta_em_manutencao: bool  # bloqueio agendado foi aplicado
+    avaria_reportada: bool = False
