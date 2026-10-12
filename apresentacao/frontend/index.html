@@ -164,12 +164,7 @@
 
             <div class="field">
               <label for="reg-nome">Nome</label>
-              <input
-                id="reg-nome"
-                type="text"
-                autocomplete="name"
-                required
-              />
+              <input id="reg-nome" type="text" autocomplete="name" required />
             </div>
             <div class="field">
               <label for="reg-email">E-mail</label>
@@ -675,8 +670,8 @@
           for (const est of estacoes) {
             const operacional = est.status === "OPERACIONAL";
             const div = document.createElement("div");
-<<<<<<< HEAD
-            div.className = "estacao-item" + (operacional ? "" : " indisponivel");
+            div.className =
+              "estacao-item" + (operacional ? "" : " indisponivel");
 
             const info = document.createElement("div");
             info.className = "info";
@@ -701,13 +696,6 @@
             }
 
             div.append(info, vagas);
-=======
-            div.className = "estacao-item";
-            div.innerHTML = `
-        <div class="info"><strong>${esc(est.nome)}</strong><span>${esc(est.endereco)}</span></div>
-        <div class="vagas">${esc(est.vagas_disponiveis)}/${esc(est.capacidade_total)} vagas</div>
-      `;
->>>>>>> feat/issue-C1
             wrap.appendChild(div);
           }
         }
