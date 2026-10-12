@@ -15,16 +15,19 @@ from servicos_tecnicos.pagamentos import tokenizador
 from servicos_tecnicos.banco_de_dados import repository_cartao as repo
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
 from servicos_tecnicos.banco_de_dados.models import CartaoORM
+from servicos_tecnicos.banco_de_dados.models import PagamentoORM
 from dominio.pagamento.schemas import CartaoCreate
+from servicos_tecnicos.pagamentos import gateway as gateway_simulado
 
 class PagamentoService:
     TIPOS_SUPORTADOS = {TipoPagamento.CARTAO_CREDITO, TipoPagamento.CARTAO_DEBITO}
     TIPOS_ADIADOS = {TipoPagamento.PIX}  # iteração 3
  
-    def __init__(self, pagamento_repo, cartao_repo, locacao_repo=None):
+    def __init__(self, pagamento_repo, cartao_repo, locacao_repo=None, gateway=None):
         self.pagamento_repo = pagamento_repo
         self.cartao_repo = cartao_repo
         self.locacao_repo = locacao_repo
+        self.gateway = gateway or gateway_simulado
  
     # --- Operações públicas -------------------------------------------
     def criar_pagamento(self, dados, usuario_id):
@@ -48,6 +51,49 @@ class PagamentoService:
  
     def listar_pagamentos(self):
         return self.pagamento_repo.list_all()
+ 
+    # --- Cobrança (RF-12, RN-06, RN-07) -------------------------------
+    def cobrar_corrida(self, email, valor, locacao_id):
+        """Cobra a corrida no cartão de crédito vinculado ao usuário.
+ 
+        Recusa NÃO lança exceção: devolve o PagamentoORM com status RECUSADO
+        para a locação decidir o que fazer.
+        """
+        self._validar_locacao(locacao_id)
+        return self._cobrar(email, valor, locacao_id=locacao_id)
+ 
+    def cobrar_pacote(self, email, valor, pacote_id):
+        """Cobra a compra de um pacote de minutos (mesmo gateway da corrida)."""
+        self._validar_pacote(pacote_id)
+        return self._cobrar(email, valor, pacote_id=pacote_id)
+ 
+    def exigir_cartao_credito(self, email):
+        """RN-06: o usuário precisa ter cartão de crédito cadastrado.
+ 
+        Chamar ao iniciar uma locação. Devolve o cartão ou levanta 400.
+        """
+        cartao = self.cartao_repo.get_credito_by_email(email)
+        if cartao is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Usuário não possui cartão de crédito cadastrado",
+            )
+        return cartao
+ 
+    def _cobrar(self, email, valor, locacao_id=None, pacote_id=None):
+        self._validar_destino(locacao_id, pacote_id)
+        self._validar_valor(valor)
+        cartao = self.exigir_cartao_credito(email)
+        resultado = self.gateway.cobrar(cartao.token, valor)  # APROVADO/RECUSADO
+        pagamento = PagamentoORM(
+            valor=valor,
+            tipo=TipoPagamento.CARTAO_CREDITO,
+            status=resultado,
+            cartao_id=cartao.id,
+            locacao_id=locacao_id,
+            pacote_id=pacote_id,
+        )
+        return self.pagamento_repo.create(pagamento)
  
     # --- Validações ---------------------------------------------------
     @staticmethod
