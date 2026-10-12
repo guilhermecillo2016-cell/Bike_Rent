@@ -9,3 +9,7 @@ python-dotenv
 passlib[bcrypt]
 bcrypt==4.0.1        # passlib 1.7.4 é incompatível com bcrypt>=4.1 (bug conhecido)
 python-jose[cryptography]
+
+#testes
+pytest
+httpx
