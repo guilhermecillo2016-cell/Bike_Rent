@@ -5,16 +5,29 @@ Regras de negócio do domínio Locacao: início da corrida (RF-07, RN-01,
 RN-06, extensão 4-5a). O domínio depende só da interface da trava.
 """
 
-from fastapi import HTTPException, status as http
+from curses.ascii import HT
 
+from fastapi import HTTPException, status as http
+from datetime import datetime
+from typing import Optional
+
+
+from dominio import locacao
 from dominio.bicicleta import service as bicicleta_service
 from dominio.estacao import service as estacao_service
-from dominio.locacao.schemas import LocacaoPublic
+
 from dominio.pagamento import service as pagamento_service
+from dominio.pagamento import pacote_service
+
+from dominio.locacao.schemas import LocacaoPublic, LocacaoAndamento
+from dominio.locacao import tarifa
+
 from servicos_tecnicos.banco_de_dados import repository_locacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao
 from servicos_tecnicos.banco_de_dados.models import LocacaoORM
 from servicos_tecnicos.iot import ErroTrava, obter_trava
+
+
 
 
 def to_public(locacao: LocacaoORM) -> LocacaoPublic:
@@ -76,3 +89,35 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
     estacao_service.remover_bicicleta(bicicleta.id)  # estacao_id = None
     bicicleta_service.set_status(bicicleta.id, StatusBicicleta.EM_USO)
     return locacao
+
+def obter_locacao_ativa(user_email: str) -> LocacaoORM:
+    locacao = repo.get_ativa_by_usuario(user_email)
+    if locacao is None:
+        raise HTTPException(
+            status_code=http.HTTP_404_NOT_FOUND,
+            detail="Voce não tem nenhuma corrida em andamento"
+        )
+    return locacao
+
+def calcular_andamento(locacao: LocacaoORM, agora: Optional[datetime] = None) -> LocacaoAndamento:
+    agora = agora or datetime.now()
+    segundos = max(0, int((agora - locacao.data_hora_inicio).total_seconds()))
+    minutos = tarifa.minutos_iniciados(segundos)
+
+    saldo = pacote_service.saldo_minutos(locacao.usuario_email, agora)
+    abatidos = min(minutos, saldo)
+    custo = tarifa.calcular_valor(minutos - abatidos)
+
+    estacao = estacao_service.obter_estacao(locacao.estacao_origem_id)
+
+    return LocacaoAndamento(
+        locacao_id=locacao.id,
+        bicicleta_id=locacao.bicicleta_id,
+        estacao_origem_id=estacao.id,
+        estacao_origem_nome=estacao.nome,
+        data_hora_inicio=locacao.data_hora_inicio,
+        duracao_segundos=segundos,
+        duracao_minutos=minutos,
+        minutos_pacote=abatidos,
+        custo_estimado=custo,
+    )
