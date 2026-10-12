@@ -10,7 +10,7 @@ ciclista ver onde há bicicletas disponíveis).
 """
 
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 
@@ -36,7 +36,8 @@ from dominio.pagamento import service as pagamento_service
 
 from dominio.estacao.schemas import EstacaoPublic
 from dominio.estacao import service as estacao_service
-
+from dominio.estacao import disponibilidade
+from dominio.estacao.schemas_disponibilidade import EstacaoDisponibilidade
 
 router = APIRouter(prefix="/webclient", tags=["WebClient"])
 
@@ -133,9 +134,23 @@ def validar_qr(
 # mas mostra que a estação criada pelo admin "fica disponível no
 # sistema", como o texto da História 2 descreve)
 # ------------------------------------------------------------------
-@router.get("/estacoes", response_model=list[EstacaoPublic])
-def listar_estacoes_publico():
-    return [estacao_service.to_public(e) for e in estacao_service.listar_estacoes()]
+@router.get("/estacoes", response_model=list[EstacaoDisponibilidade])
+def listar_estacoes_publico(
+    lat: float | None = Query(None, ge=-90, le=90),
+    lng: float | None = Query(None, ge=-180, le=180),
+):
+    # Com lat e lng, ordena por distância; sem eles, devolve na ordem do cadastro.
+    return disponibilidade.listar_estacoes(lat, lng)
+ 
+ 
+@router.get("/estacoes/proximas-com-vaga", response_model=list[EstacaoDisponibilidade])
+def estacoes_proximas_com_vaga(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+    n: int = Query(3, ge=1, le=10),
+):
+    # Extensão 7a do UC1 (consumida pela [B5]): devolução em estação sem vaga.
+    return disponibilidade.proximas_com_vaga(lat, lng, n)
 
 @router.get("/pacotes/catalogo", response_model=list[ItemCatalogo])
 def catalogo_pacotes():
