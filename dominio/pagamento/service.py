@@ -20,6 +20,25 @@ from servicos_tecnicos.banco_de_dados.models import PagamentoORM
 from dominio.pagamento.schemas import CartaoCreate
 from servicos_tecnicos.pagamentos import gateway as gateway_simulado
 
+_TIPOS_CARTAO = {
+    "credito" : TipoPagamento.CARTAO_CREDITO,
+    "crédito" : TipoPagamento.CARTAO_CREDITO,
+    "debito" : TipoPagamento.CARTAO_DEBITO,
+    "débito" : TipoPagamento.CARTAO_DEBITO
+}
+
+def _normalizar_tipo(tipo: str):
+    chave = (tipo or "").strip().lower()
+    if chave in {t.value.lower() for t in TipoPagamento}:
+        chave = chave.replace("cartao_", "")
+    resultado = _TIPOS_CARTAO.get(chave)
+    if resultado is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tipo de cartão inválido (use crédito ou débito)",
+        )
+    return resultado.value
+
 class PagamentoService:
     """Regras de pagamento (RF-12, RN-06, RN-07).
  
@@ -178,7 +197,7 @@ def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> CartaoORM:
         bandeira=resultado["bandeira"],
         nome_titular=dados.nome_titular,
         validade=dados.validade,
-        tipo=dados.tipo,
+        tipo=_normalizar_tipo(dados.tipo),
         apelido=dados.apelido
         
     )
@@ -194,3 +213,4 @@ def remover_cartao(email_usuario: str, token: str) -> bool:
         return False
     repo.remover_cartao(email_usuario, cartao)
     return True
+

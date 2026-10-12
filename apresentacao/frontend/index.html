@@ -395,7 +395,7 @@
           d.textContent = value == null ? "" : String(value);
           return d.innerHTML;
         }
-        const TIPOS = { credito: "Crédito", debito: "Débito" };
+        const TIPOS = { CARTAO_CREDITO: "Crédito", CARTAO_DEBITO: "Débito" };
 
         // ---- Máscaras simples ----
         document.getElementById("reg-cpf").addEventListener("input", (e) => {
