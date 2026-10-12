@@ -111,7 +111,7 @@ def validar_qr(
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={
-                "detail" : "Bicicleta Indisponível por razões operacionais",
+                "detail" : "Bicicleta indisponível por razões operacionais",
                 "sugestoes" : [bicicleta_service.to_public(b).model_dump(mode="json")
                                for b in e.sugestoes]
                 }
