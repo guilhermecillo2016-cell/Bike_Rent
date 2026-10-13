@@ -7,11 +7,7 @@ mock por hardware real (ou por outro mock nos testes) é só chamar
 definir_trava().
 """
 
-from tkinter import NO
-from token import OP
 from typing import Optional
-
-from pydantic.types import T
 
 from servicos_tecnicos.iot.interface import ErroTrava, TravaInteligente
 

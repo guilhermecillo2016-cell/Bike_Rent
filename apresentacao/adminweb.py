@@ -12,7 +12,6 @@ separado do cadastro público (WebClient) e exige uma chave secreta
 import os
 import secrets
 from datetime import date
-from token import OP
 from typing import Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status

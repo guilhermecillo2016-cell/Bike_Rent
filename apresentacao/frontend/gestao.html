@@ -3,55 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bike Rent — área administrativa</title>
+    <meta name="theme-color" content="#12213B" />
+    <title>Bike Rent — gestão</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=3" />
   </head>
   <body>
-    <div class="layout">
-      <!-- Painel esquerdo -->
+    <!-- =============================================================
+         ENTRADA (login da equipe e cadastro de administrador)
+         ============================================================= -->
+    <div class="layout" id="tela-auth">
       <section class="hero">
         <div class="hero-brand">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
             <circle cx="6.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
             <circle cx="19.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
-            <path
-              d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13"
-              stroke="#F5F3ED"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13" stroke="#F5F3ED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
-          Bike Rent · Admin
+          Bike Rent · Gestão
         </div>
 
         <div class="hero-copy">
-          <h1>Cadastre novas estações na rede.</h1>
+          <h1>Cuide da frota e acompanhe a operação.</h1>
           <p>
-            Informe local, coordenadas e capacidade para que a estação fique
-            disponível para os ciclistas.
+            Estações, bicicletas, avarias e relatórios em um só lugar, para a
+            equipe manter a rede funcionando.
           </p>
         </div>
 
-        <svg
-          class="route-map"
-          viewBox="0 0 420 420"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M20 340 C 90 340, 90 260, 150 250 S 230 180, 260 140 S 330 100, 400 80"
-            stroke="#41598A"
-            stroke-width="2"
-            stroke-dasharray="2 10"
-            stroke-linecap="round"
-          />
+        <svg class="route-map" viewBox="0 0 420 420" fill="none" aria-hidden="true">
+          <path d="M20 340 C 90 340, 90 260, 150 250 S 230 180, 260 140 S 330 100, 400 80" stroke="#41598A" stroke-width="2" stroke-dasharray="2 10" stroke-linecap="round" />
           <circle cx="20" cy="340" r="7" fill="#F2B705" />
           <circle cx="150" cy="250" r="6" fill="#C7D0E0" />
           <circle cx="260" cy="140" r="6" fill="#C7D0E0" />
@@ -59,194 +45,295 @@
         </svg>
 
         <div class="hero-foot">
-          <div><strong>Restrito</strong>acesso administrativo</div>
+          <div><strong>Restrito</strong>administradores e operadores</div>
         </div>
       </section>
 
-      <!-- Painel direito -->
       <section class="panel">
-        <!-- Login / cadastro de admin -->
         <div class="card" id="card-login">
           <div class="tabs" role="tablist">
-            <button
-              class="tab"
-              id="tab-login"
-              role="tab"
-              aria-selected="true"
-              aria-controls="form-login"
-            >
-              Entrar
-            </button>
-            <button
-              class="tab"
-              id="tab-register"
-              role="tab"
-              aria-selected="false"
-              aria-controls="form-register"
-            >
-              Cadastrar admin
-            </button>
+            <button class="tab" id="tab-login" role="tab" aria-selected="true" aria-controls="form-login">Entrar</button>
+            <button class="tab" id="tab-register" role="tab" aria-selected="false" aria-controls="form-register">Cadastrar admin</button>
           </div>
 
-          <form id="form-login" class="active" novalidate>
-            <h2>Acesso administrativo</h2>
-            <p class="sub">
-              Entre com uma conta com permissão de administrador.
-            </p>
-
+          <form id="form-login" class="alternavel active" novalidate>
+            <h2>Acesso da equipe</h2>
+            <p class="sub">Administradores e operadores de campo.</p>
             <div class="field">
               <label for="login-email">E-mail</label>
-              <input
-                id="login-email"
-                type="email"
-                autocomplete="email"
-                required
-              />
+              <input id="login-email" type="email" autocomplete="email" required />
             </div>
             <div class="field">
               <label for="login-password">Senha</label>
-              <input
-                id="login-password"
-                type="password"
-                autocomplete="current-password"
-                required
-              />
+              <input id="login-password" type="password" autocomplete="current-password" required />
             </div>
-
             <button class="btn" type="submit">Entrar</button>
             <div class="msg" id="login-msg"></div>
           </form>
 
-          <form id="form-register" novalidate>
+          <form id="form-register" class="alternavel" novalidate>
             <h2>Cadastrar administrador</h2>
-            <p class="sub">
-              Exige a chave definida no servidor (variável ADMIN_SECRET).
-            </p>
-
+            <p class="sub">Exige a chave definida no servidor (variável ADMIN_SECRET).</p>
             <div class="field">
               <label for="reg-nome">Nome</label>
-              <input
-                id="reg-nome"
-                type="text"
-                autocomplete="name"
-                required
-              />
+              <input id="reg-nome" type="text" autocomplete="name" required />
             </div>
             <div class="field">
               <label for="reg-email">E-mail</label>
-              <input
-                id="reg-email"
-                type="email"
-                autocomplete="email"
-                required
-              />
+              <input id="reg-email" type="email" autocomplete="email" required />
             </div>
             <div class="field">
               <label for="reg-password">Senha</label>
-              <input
-                id="reg-password"
-                type="password"
-                autocomplete="new-password"
-                minlength="6"
-                required
-              />
+              <input id="reg-password" type="password" autocomplete="new-password" minlength="6" required />
             </div>
             <div class="field">
               <label for="reg-secret">Chave de administrador</label>
-              <input
-                id="reg-secret"
-                type="password"
-                autocomplete="off"
-                required
-              />
+              <input id="reg-secret" type="password" autocomplete="off" required />
             </div>
-
             <button class="btn" type="submit">Cadastrar administrador</button>
             <div class="msg" id="register-msg"></div>
           </form>
 
           <p class="footer-link"><a href="/">Voltar para o site</a></p>
         </div>
+      </section>
+    </div>
 
-        <!-- Painel administrativo -->
-        <div class="card wide" id="card-dashboard" style="display: none">
-          <p class="sub" style="margin-bottom: 24px">
-            Logado como <strong id="admin-email">—</strong>
-          </p>
+    <!-- =============================================================
+         PAINEL DE GESTÃO
+         ============================================================= -->
+    <div class="app" id="tela-app" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+            <circle cx="6.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
+            <circle cx="19.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
+            <path d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13" stroke="#F5F3ED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Bike Rent · Gestão
+        </div>
+        <div class="quem">
+          <span class="nome-longo"><strong id="topo-nome">—</strong></span>
+          <span class="selo info" id="topo-papel">—</span>
+          <button class="btn-link" id="btn-sair" type="button">Sair</button>
+        </div>
+      </header>
 
-          <div id="bloco-estacao">
-          <h2>Criar estação</h2>
-          <p class="sub">
-            Ela ficará disponível na lista pública de estações assim que for
-            criada.
-          </p>
+      <nav class="tabbar" role="tablist" aria-label="Seções da gestão">
+        <button role="tab" data-aba="estacoes" aria-selected="true">Estações</button>
+        <button role="tab" data-aba="bicicletas" aria-selected="false">Bicicletas</button>
+        <button role="tab" data-aba="avarias" aria-selected="false">Avarias</button>
+        <button role="tab" data-aba="relatorios" aria-selected="false" data-so-admin>Relatórios</button>
+        <button role="tab" data-aba="auditoria" aria-selected="false" data-so-admin>Auditoria</button>
+        <button role="tab" data-aba="equipe" aria-selected="false" data-so-admin>Equipe</button>
+      </nav>
 
-          <form id="form-estacao" class="active" novalidate>
-            <div class="field">
-              <label for="est-nome">Nome</label>
-              <input
-                id="est-nome"
-                type="text"
-                placeholder="Ex: Estação Praça da Sé"
-                required
-              />
-            </div>
-            <div class="field">
-              <label for="est-endereco">Endereço</label>
-              <input
-                id="est-endereco"
-                type="text"
-                placeholder="Rua, número, bairro"
-                required
-              />
-            </div>
-            <div class="field-row-2">
-              <div class="field">
-                <label for="est-lat">Latitude</label>
-                <input
-                  id="est-lat"
-                  type="text"
-                  inputmode="decimal"
-                  placeholder="-23.5505"
-                  required
-                />
+      <main class="app-main">
+        <!-- ================= ESTAÇÕES ================= -->
+        <section class="aba" id="aba-estacoes" role="tabpanel">
+          <div class="caixa" data-so-admin>
+            <h2>Nova estação</h2>
+            <p class="sub">Ela fica disponível para os ciclistas assim que for criada.</p>
+            <form id="form-estacao" novalidate>
+              <div class="grade col2">
+                <div class="field">
+                  <label for="est-nome">Nome</label>
+                  <input id="est-nome" type="text" placeholder="Ex: Estação Praça da Sé" required />
+                </div>
+                <div class="field">
+                  <label for="est-endereco">Endereço</label>
+                  <input id="est-endereco" type="text" placeholder="Rua, número, bairro" required />
+                </div>
               </div>
-              <div class="field">
-                <label for="est-lng">Longitude</label>
-                <input
-                  id="est-lng"
-                  type="text"
-                  inputmode="decimal"
-                  placeholder="-46.6333"
-                  required
-                />
+              <div class="grade col3">
+                <div class="field">
+                  <label for="est-lat">Latitude</label>
+                  <input id="est-lat" type="text" inputmode="decimal" placeholder="-27.5954" required />
+                </div>
+                <div class="field">
+                  <label for="est-lng">Longitude</label>
+                  <input id="est-lng" type="text" inputmode="decimal" placeholder="-48.5480" required />
+                </div>
+                <div class="field">
+                  <label for="est-capacidade">Capacidade (vagas)</label>
+                  <input id="est-capacidade" type="number" min="1" placeholder="20" required />
+                </div>
               </div>
-            </div>
-            <div class="field">
-              <label for="est-capacidade">Capacidade total de vagas</label>
-              <input
-                id="est-capacidade"
-                type="number"
-                min="1"
-                placeholder="20"
-                required
-              />
-            </div>
-
-            <button class="btn" type="submit">Criar estação</button>
-            <div class="msg" id="estacao-msg"></div>
-          </form>
+              <div class="barra-ferramentas" style="margin-bottom:0">
+                <button class="btn secondary pequeno" id="btn-usar-localizacao" type="button">Usar minha localização</button>
+                <button class="btn auto" type="submit">Criar estação</button>
+              </div>
+              <div class="msg" id="estacao-msg" aria-live="polite"></div>
+            </form>
           </div>
 
-          <!-- Só administrador: cria a conta do operador de campo -->
-          <div id="bloco-operador" style="display: none; margin-top: 32px">
-            <h2>Cadastrar operador de campo</h2>
-            <p class="sub">
-              O operador entra nesta mesma página com o e-mail e a senha
-              definidos aqui e só vê as telas dele.
-            </p>
+          <div class="barra-ferramentas" style="margin-top:20px">
+            <h2 class="titulo-aba">Estações cadastradas</h2>
+            <button class="btn secondary pequeno" id="btn-atualizar-estacoes" type="button">Atualizar</button>
+          </div>
+          <div class="tabela-wrap" id="estacoes-tabela">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nome</th><th>Endereço</th><th>Coordenadas</th><th>Bicicletas</th><th>Vagas</th><th>Status</th><th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="estacoes-corpo"></tbody>
+            </table>
+          </div>
+          <div class="vazio" id="estacoes-vazio" hidden>Nenhuma estação cadastrada ainda.</div>
+          <div class="msg" id="acao-estacao-msg" aria-live="polite"></div>
+        </section>
 
-            <form id="form-operador" class="active" novalidate>
+        <!-- ================= BICICLETAS ================= -->
+        <section class="aba" id="aba-bicicletas" role="tabpanel" hidden>
+          <div class="caixa" data-so-admin>
+            <h2>Nova bicicleta</h2>
+            <p class="sub">A bicicleta nasce disponível na estação escolhida, ocupando uma vaga, e recebe um QR Code automático.</p>
+            <form id="form-bicicleta" novalidate>
+              <div class="barra-ferramentas" style="margin-bottom:0">
+                <div class="field" style="margin:0; flex:1; min-width:220px">
+                  <label for="bike-estacao">Estação</label>
+                  <select id="bike-estacao" required></select>
+                </div>
+                <button class="btn auto" type="submit" style="align-self:flex-end">Cadastrar bicicleta</button>
+              </div>
+              <div class="msg" id="bicicleta-msg" aria-live="polite"></div>
+            </form>
+          </div>
+
+          <div class="barra-ferramentas" style="margin-top:20px">
+            <h2 class="titulo-aba">Frota</h2>
+            <div class="grupo">
+              <select class="controle" id="filtro-bike-status" aria-label="Filtrar por status">
+                <option value="">Todos os status</option>
+                <option value="DISPONIVEL">Disponível</option>
+                <option value="EM_USO">Em uso</option>
+                <option value="EM_MANUTENCAO">Em manutenção</option>
+                <option value="BLOQUEADA">Bloqueada</option>
+              </select>
+              <select class="controle" id="filtro-bike-estacao" aria-label="Filtrar por estação"></select>
+              <button class="btn secondary pequeno" id="btn-atualizar-bicicletas" type="button">Atualizar</button>
+            </div>
+          </div>
+          <div class="tabela-wrap" id="bicicletas-tabela">
+            <table class="data-table">
+              <thead>
+                <tr><th>ID</th><th>QR Code</th><th>Status</th><th>Estação</th><th>Ação</th></tr>
+              </thead>
+              <tbody id="bicicletas-corpo"></tbody>
+            </table>
+          </div>
+          <div class="vazio" id="bicicletas-vazio" hidden>Nenhuma bicicleta encontrada.</div>
+          <div class="msg" id="acao-bicicleta-msg" aria-live="polite"></div>
+        </section>
+
+        <!-- ================= AVARIAS ================= -->
+        <section class="aba" id="aba-avarias" role="tabpanel" hidden>
+          <div class="barra-ferramentas">
+            <div>
+              <h2 class="titulo-aba">Avarias reportadas</h2>
+              <p class="sub" style="margin:4px 0 0" id="avarias-ajuda">Reportadas pelos ciclistas ao devolver a bicicleta.</p>
+            </div>
+            <div class="grupo">
+              <select class="controle" id="filtro-avaria-status" aria-label="Filtrar por situação">
+                <option value="">Todas</option>
+                <option value="PENDENTE">Pendentes</option>
+                <option value="EM_REPARO">Em reparo</option>
+                <option value="RESOLVIDO">Resolvidas</option>
+              </select>
+              <button class="btn secondary pequeno" id="btn-atualizar-avarias" type="button">Atualizar</button>
+            </div>
+          </div>
+          <div class="tabela-wrap" id="avarias-tabela">
+            <table class="data-table">
+              <thead>
+                <tr><th>Nº</th><th>Bicicleta</th><th>Descrição</th><th>Reportada por</th><th>Quando</th><th>Situação</th><th>Ação</th></tr>
+              </thead>
+              <tbody id="avarias-corpo"></tbody>
+            </table>
+          </div>
+          <div class="vazio" id="avarias-vazio" hidden>Nenhuma avaria encontrada.</div>
+          <div class="msg" id="acao-avaria-msg" aria-live="polite"></div>
+        </section>
+
+        <!-- ================= RELATÓRIOS ================= -->
+        <section class="aba" id="aba-relatorios" role="tabpanel" hidden>
+          <h2 class="titulo-aba">Relatórios</h2>
+          <p class="sub">Receita, ociosidade da frota, quebras e horários de pico.</p>
+
+          <div class="caixa">
+            <form id="form-relatorio" novalidate>
+              <div class="barra-ferramentas" style="margin-bottom:0; align-items:flex-end">
+                <div class="grupo" style="align-items:flex-end">
+                  <div class="field" style="margin:0"><label for="rel-inicio">De</label><input id="rel-inicio" type="date" /></div>
+                  <div class="field" style="margin:0"><label for="rel-fim">Até</label><input id="rel-fim" type="date" /></div>
+                  <div class="field" style="margin:0; min-width:200px"><label for="rel-estacao">Estação</label><select id="rel-estacao"></select></div>
+                </div>
+                <button class="btn auto" type="submit">Gerar relatório</button>
+              </div>
+              <div class="msg" id="relatorio-msg" aria-live="polite"></div>
+            </form>
+          </div>
+
+          <div id="relatorio-resultado" hidden>
+            <p class="sub" style="margin:18px 0 10px" id="rel-resumo"></p>
+            <div class="grade col4">
+              <div class="stat"><div class="rotulo">Receita total</div><div class="valor" id="stat-receita">—</div><div class="detalhe" id="stat-receita-detalhe"></div></div>
+              <div class="stat"><div class="rotulo">Corridas</div><div class="valor" id="stat-corridas">—</div><div class="detalhe">iniciadas no período</div></div>
+              <div class="stat"><div class="rotulo">Ociosidade da frota</div><div class="valor" id="stat-ociosidade">—</div><div class="detalhe" id="stat-ociosidade-detalhe"></div><div class="barra amarela" style="margin-top:10px"><i id="barra-ociosidade" style="width:0"></i></div></div>
+              <div class="stat"><div class="rotulo">Índice de quebras</div><div class="valor" id="stat-quebras">—</div><div class="detalhe" id="stat-quebras-detalhe"></div></div>
+            </div>
+
+            <div class="caixa">
+              <h2>Composição da receita</h2>
+              <div class="barra-empilhada" style="margin-top:12px"><i class="corridas" id="barra-corridas" style="width:0"></i><i class="pacotes" id="barra-pacotes" style="width:0"></i></div>
+              <div class="legenda">
+                <span><i style="background:var(--green)"></i>Corridas <b id="leg-corridas">—</b></span>
+                <span><i style="background:var(--yellow)"></i>Pacotes de minutos <b id="leg-pacotes">—</b></span>
+              </div>
+            </div>
+
+            <div class="caixa">
+              <h2>Horários de pico por estação</h2>
+              <p class="sub">Hora do dia em que mais corridas começam em cada estação.</p>
+              <div class="tabela-wrap">
+                <table class="data-table">
+                  <thead><tr><th>Estação</th><th>Corridas</th><th>Hora de pico</th><th>Corridas nessa hora</th></tr></thead>
+                  <tbody id="picos-corpo"></tbody>
+                </table>
+              </div>
+              <div class="vazio" id="picos-vazio" hidden>Sem corridas no período.</div>
+            </div>
+            <p class="sub" id="rel-geracao" style="margin-top:12px"></p>
+          </div>
+        </section>
+
+        <!-- ================= AUDITORIA ================= -->
+        <section class="aba" id="aba-auditoria" role="tabpanel" hidden>
+          <div class="barra-ferramentas">
+            <div>
+              <h2 class="titulo-aba">Histórico de auditoria</h2>
+              <p class="sub" style="margin:4px 0 0">Toda mudança manual de status de bicicleta ou estação fica registrada aqui.</p>
+            </div>
+            <button class="btn secondary pequeno" id="btn-atualizar-auditoria" type="button">Atualizar</button>
+          </div>
+          <div class="tabela-wrap" id="auditoria-tabela">
+            <table class="data-table">
+              <thead><tr><th>Quando</th><th>Quem</th><th>O quê</th><th>De</th><th>Para</th></tr></thead>
+              <tbody id="auditoria-corpo"></tbody>
+            </table>
+          </div>
+          <div class="vazio" id="auditoria-vazio" hidden>Nenhuma alteração registrada ainda.</div>
+        </section>
+
+        <!-- ================= EQUIPE ================= -->
+        <section class="aba" id="aba-equipe" role="tabpanel" hidden>
+          <h2 class="titulo-aba">Equipe</h2>
+          <p class="sub">O operador de campo entra nesta mesma página e vê só estações, bicicletas e avarias.</p>
+          <div class="caixa" style="max-width:520px">
+            <h2>Cadastrar operador de campo</h2>
+            <form id="form-operador" style="margin-top:12px" novalidate>
               <div class="field">
                 <label for="op-nome">Nome</label>
                 <input id="op-nome" type="text" autocomplete="off" required />
@@ -257,719 +344,32 @@
               </div>
               <div class="field">
                 <label for="op-password">Senha</label>
-                <input
-                  id="op-password"
-                  type="password"
-                  autocomplete="new-password"
-                  minlength="6"
-                  required
-                />
+                <input id="op-password" type="password" autocomplete="new-password" minlength="6" required />
+                <small>Mínimo de 6 caracteres.</small>
               </div>
-
               <button class="btn" type="submit">Cadastrar operador</button>
-              <div class="msg" id="operador-msg"></div>
+              <div class="msg" id="operador-msg" aria-live="polite"></div>
             </form>
           </div>
-
-          <div class="toolbar" style="margin-top: 32px">
-            <h2>Estações cadastradas</h2>
-            <button class="btn secondary" id="refresh-btn" type="button">
-              Atualizar
-            </button>
-          </div>
-
-          <table class="data-table" id="estacoes-table">
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Endereço</th>
-                <th>Coordenadas</th>
-                <th>Bicicletas</th>
-                <th>Vagas</th>
-                <th>Status</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody id="estacoes-table-body"></tbody>
-          </table>
-          <div class="empty-state" id="estacoes-empty" style="display: none">
-            Nenhuma estação cadastrada ainda.
-          </div>
-          <div class="msg" id="acao-estacao-msg"></div>
-
-          <!-- Bicicletas: a equipe vê a lista; só o administrador cadastra -->
-          <div id="bloco-bicicletas" style="margin-top: 32px">
-            <div class="toolbar">
-              <h2>Bicicletas</h2>
-              <button class="btn secondary" id="refresh-bicicletas-btn" type="button">
-                Atualizar
-              </button>
-            </div>
-
-            <div id="bloco-bicicleta-form" style="display: none">
-              <p class="sub">
-                A bicicleta nasce disponível na estação escolhida, ocupando
-                uma vaga, e recebe um QR Code automático.
-              </p>
-              <form id="form-bicicleta" class="active" novalidate>
-                <div class="field">
-                  <label for="bike-estacao">Estação</label>
-                  <select id="bike-estacao" required></select>
-                </div>
-                <button class="btn" type="submit">Cadastrar bicicleta</button>
-                <div class="msg" id="bicicleta-msg"></div>
-              </form>
-            </div>
-
-            <table class="data-table" id="bicicletas-table" style="margin-top: 16px">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>QR Code</th>
-                  <th>Status</th>
-                  <th>Estação</th>
-                  <th>Ação</th>
-                </tr>
-              </thead>
-              <tbody id="bicicletas-table-body"></tbody>
-            </table>
-            <div class="empty-state" id="bicicletas-empty" style="display: none">
-              Nenhuma bicicleta cadastrada ainda.
-            </div>
-            <div class="msg" id="acao-bicicleta-msg"></div>
-          </div>
-
-          <!-- Histórico de auditoria: só administrador -->
-          <div id="bloco-auditoria" style="display: none; margin-top: 32px">
-            <div class="toolbar">
-              <h2>Histórico de auditoria</h2>
-              <button class="btn secondary" id="refresh-auditoria-btn" type="button">
-                Atualizar
-              </button>
-            </div>
-            <p class="sub">
-              Toda mudança manual de status de bicicleta ou estação fica
-              registrada aqui.
-            </p>
-            <table class="data-table" id="auditoria-table" style="display: none">
-              <thead>
-                <tr>
-                  <th>Quando</th>
-                  <th>Quem</th>
-                  <th>O quê</th>
-                  <th>De</th>
-                  <th>Para</th>
-                </tr>
-              </thead>
-              <tbody id="auditoria-table-body"></tbody>
-            </table>
-            <div class="empty-state" id="auditoria-empty">
-              Nenhuma alteração registrada ainda.
-            </div>
-          </div>
-
-          <button class="btn secondary logout" id="logout-btn" type="button">
-            Sair
-          </button>
-          <p class="footer-link"><a href="/">Voltar para o site</a></p>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
 
-    <script>
-      (function () {
-        // Chave própria: precisa ser diferente da usada em index.html
-        // (rota_access_token), senão a sessão de admin e a de ciclista se
-        // sobrescrevem uma à outra por estarem na mesma origem/localStorage.
-        const TOKEN_KEY = "rota_admin_token";
+    <!-- QR Code da bicicleta (para imprimir e colar no quadro) -->
+    <dialog id="modal-qr">
+      <div class="qr-modal">
+        <h2 id="qr-titulo">QR Code</h2>
+        <div class="imagem-qr" id="qr-imagem"></div>
+        <code class="mono" id="qr-texto"></code>
+        <div class="botoes nao-imprimir">
+          <button class="btn secondary" id="btn-fechar-qr" type="button">Fechar</button>
+          <button class="btn" id="btn-imprimir-qr" type="button">Imprimir</button>
+        </div>
+      </div>
+    </dialog>
 
-        const tabLogin = document.getElementById("tab-login");
-        const tabRegister = document.getElementById("tab-register");
-        const formLogin = document.getElementById("form-login");
-        const formRegister = document.getElementById("form-register");
-        const cardLogin = document.getElementById("card-login");
-        const cardDashboard = document.getElementById("card-dashboard");
-
-        function showTab(which) {
-          const loginActive = which === "login";
-          tabLogin.setAttribute("aria-selected", String(loginActive));
-          tabRegister.setAttribute("aria-selected", String(!loginActive));
-          formLogin.classList.toggle("active", loginActive);
-          formRegister.classList.toggle("active", !loginActive);
-        }
-        tabLogin.addEventListener("click", () => showTab("login"));
-        tabRegister.addEventListener("click", () => showTab("register"));
-
-        function showMsg(el, text, type) {
-          el.textContent = text;
-          el.className = "msg show " + type;
-        }
-        function clearMsg(el) {
-          el.className = "msg";
-        }
-        function setLoading(button, loading, idleLabel) {
-          button.disabled = loading;
-          button.textContent = loading ? "Enviando..." : idleLabel;
-        }
-        function authHeader() {
-          return { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` };
-        }
-
-        // ---------------- Cadastro de admin ----------------
-        formRegister.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const msg = document.getElementById("register-msg");
-          clearMsg(msg);
-          const button = formRegister.querySelector(".btn");
-
-          const payload = {
-            nome: document.getElementById("reg-nome").value.trim(),
-            email: document.getElementById("reg-email").value.trim(),
-            senha: document.getElementById("reg-password").value,
-          };
-          const secret = document.getElementById("reg-secret").value;
-
-          setLoading(button, true, "Cadastrar administrador");
-          try {
-            const res = await fetch("/adminweb/register", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Admin-Secret": secret,
-              },
-              body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              showMsg(
-                msg,
-                data.detail || "Não foi possível cadastrar o administrador.",
-                "error",
-              );
-              return;
-            }
-            showMsg(
-              msg,
-              "Administrador criado. Agora entre com esses dados.",
-              "success",
-            );
-            document.getElementById("login-email").value = payload.email;
-            formRegister.reset();
-            setTimeout(() => showTab("login"), 900);
-          } catch (err) {
-            showMsg(msg, "Não foi possível falar com o servidor.", "error");
-          } finally {
-            setLoading(button, false, "Cadastrar administrador");
-          }
-        });
-
-        // ---------------- Login ----------------
-        formLogin.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const msg = document.getElementById("login-msg");
-          clearMsg(msg);
-          const button = formLogin.querySelector(".btn");
-
-          const body = new URLSearchParams();
-          body.append(
-            "username",
-            document.getElementById("login-email").value.trim(),
-          );
-          body.append(
-            "password",
-            document.getElementById("login-password").value,
-          );
-
-          setLoading(button, true, "Entrar");
-          try {
-            const res = await fetch("/adminweb/login", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: body.toString(),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              showMsg(
-                msg,
-                data.detail || "E-mail ou senha incorretos.",
-                "error",
-              );
-              return;
-            }
-            localStorage.setItem(TOKEN_KEY, data.access_token);
-            formLogin.reset();
-            await carregarDashboard();
-          } catch (err) {
-            showMsg(msg, "Não foi possível falar com o servidor.", "error");
-          } finally {
-            setLoading(button, false, "Entrar");
-          }
-        });
-
-        // ---------------- Criar estação ----------------
-        document
-          .getElementById("form-estacao")
-          .addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const msg = document.getElementById("estacao-msg");
-            clearMsg(msg);
-            const button = e.target.querySelector(".btn");
-
-            const payload = {
-              nome: document.getElementById("est-nome").value.trim(),
-              endereco: document.getElementById("est-endereco").value.trim(),
-              latitude: parseFloat(document.getElementById("est-lat").value),
-              longitude: parseFloat(document.getElementById("est-lng").value),
-              capacidade_total: parseInt(
-                document.getElementById("est-capacidade").value,
-                10,
-              ),
-            };
-
-            setLoading(button, true, "Criar estação");
-            try {
-              const res = await fetch("/adminweb/estacoes", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...authHeader(),
-                },
-                body: JSON.stringify(payload),
-              });
-              const data = await res.json();
-              if (!res.ok) {
-                const detalhe = Array.isArray(data.detail)
-                  ? data.detail.map((d) => d.msg).join(", ")
-                  : data.detail || "Não foi possível criar a estação.";
-                showMsg(msg, detalhe, "error");
-                return;
-              }
-              showMsg(msg, "Estação criada com sucesso.", "success");
-              e.target.reset();
-              await carregarEstacoes();
-            } catch (err) {
-              showMsg(msg, "Não foi possível falar com o servidor.", "error");
-            } finally {
-              setLoading(button, false, "Criar estação");
-            }
-          });
-
-        // ---------------- Cadastrar operador (só administrador) ----------------
-        document
-          .getElementById("form-operador")
-          .addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const msg = document.getElementById("operador-msg");
-            clearMsg(msg);
-            const button = e.target.querySelector(".btn");
-
-            const payload = {
-              nome: document.getElementById("op-nome").value.trim(),
-              email: document.getElementById("op-email").value.trim(),
-              senha: document.getElementById("op-password").value,
-            };
-
-            setLoading(button, true, "Cadastrar operador");
-            try {
-              const res = await fetch("/adminweb/operadores", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...authHeader(),
-                },
-                body: JSON.stringify(payload),
-              });
-              const data = await res.json();
-              if (!res.ok) {
-                const detalhe = Array.isArray(data.erros)
-                  ? data.erros.map((x) => `${x.campo}: ${x.mensagem}`).join("; ")
-                  : data.detail || "Não foi possível cadastrar o operador.";
-                showMsg(msg, detalhe, "error");
-                return;
-              }
-              showMsg(msg, `Operador ${data.email} cadastrado.`, "success");
-              e.target.reset();
-            } catch (err) {
-              showMsg(msg, "Não foi possível falar com o servidor.", "error");
-            } finally {
-              setLoading(button, false, "Cadastrar operador");
-            }
-          });
-
-        document
-          .getElementById("refresh-btn")
-          .addEventListener("click", carregarEstacoes);
-
-        // ---------------- Renderização ----------------
-        const ROTULO_STATUS_ESTACAO = {
-          OPERACIONAL: "Operacional",
-          BLOQUEADA: "Bloqueada",
-          EM_MANUTENCAO: "Em manutenção",
-        };
-
-        function renderEstacoes(estacoes) {
-          const tbody = document.getElementById("estacoes-table-body");
-          const table = document.getElementById("estacoes-table");
-          const empty = document.getElementById("estacoes-empty");
-          tbody.innerHTML = "";
-
-          if (!estacoes.length) {
-            table.style.display = "none";
-            empty.style.display = "block";
-            return;
-          }
-          table.style.display = "table";
-          empty.style.display = "none";
-
-          for (const est of estacoes) {
-            const tr = document.createElement("tr");
-            const celulas = [
-              est.nome,
-              est.endereco,
-              `${est.latitude.toFixed(4)}, ${est.longitude.toFixed(4)}`,
-              est.bicicletas_disponiveis,
-              `${est.vagas_disponiveis}/${est.capacidade_total}`,
-              ROTULO_STATUS_ESTACAO[est.status] || est.status,
-            ];
-            for (const texto of celulas) {
-              const td = document.createElement("td");
-              td.textContent = texto;
-              tr.appendChild(td);
-            }
-            tr.appendChild(
-              celulaAcao(ROTULO_STATUS_ESTACAO, est.status, (status, botao) =>
-                alterarStatusEstacao(est.id, status, botao),
-              ),
-            );
-            tbody.appendChild(tr);
-          }
-        }
-
-        // ---------------- Alterar status (UC2) ----------------
-        let papelAtual = null;
-
-        const OPCOES_STATUS_BICICLETA = {
-          DISPONIVEL: "Disponível",
-          EM_MANUTENCAO: "Em manutenção",
-          BLOQUEADA: "Bloqueada",
-        };
-
-        function celulaAcao(opcoes, statusAtual, aoAplicar) {
-          const td = document.createElement("td");
-          const select = document.createElement("select");
-          for (const [valor, rotulo] of Object.entries(opcoes)) {
-            const opt = document.createElement("option");
-            opt.value = valor;
-            opt.textContent = rotulo;
-            select.appendChild(opt);
-          }
-          select.value = statusAtual in opcoes ? statusAtual : Object.keys(opcoes)[0];
-          const botao = document.createElement("button");
-          botao.type = "button";
-          botao.className = "btn secondary";
-          botao.textContent = "Aplicar";
-          botao.addEventListener("click", () => aoAplicar(select.value, botao));
-          td.append(select, botao);
-          return td;
-        }
-
-        async function enviarStatus(url, status, msgId, botao) {
-          const msg = document.getElementById(msgId);
-          clearMsg(msg);
-          botao.disabled = true;
-          try {
-            const res = await fetch(url, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json", ...authHeader() },
-              body: JSON.stringify({ status }),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              showMsg(msg, data.detail || "Não foi possível alterar o status.", "error");
-              return null;
-            }
-            return data;
-          } catch (err) {
-            showMsg(msg, "Não foi possível falar com o servidor.", "error");
-            return null;
-          } finally {
-            botao.disabled = false;
-          }
-        }
-
-        async function recarregarTudo() {
-          await carregarEstacoes();
-          await carregarBicicletas();
-          await carregarAuditoria();
-        }
-
-        async function alterarStatusBicicleta(id, status, botao) {
-          const data = await enviarStatus(
-            `/adminweb/bicicletas/${id}/status`, status, "acao-bicicleta-msg", botao,
-          );
-          if (!data) return;
-          const agendado = data.status === "EM_USO" && data.bloqueio_pendente;
-          showMsg(
-            document.getElementById("acao-bicicleta-msg"),
-            agendado
-              ? "A bicicleta está em corrida. Ela será colocada em manutenção quando a corrida terminar."
-              : "Status da bicicleta atualizado.",
-            "success",
-          );
-          await recarregarTudo();
-        }
-
-        async function alterarStatusEstacao(id, status, botao) {
-          const data = await enviarStatus(
-            `/adminweb/estacoes/${id}/status`, status, "acao-estacao-msg", botao,
-          );
-          if (!data) return;
-          showMsg(document.getElementById("acao-estacao-msg"), "Status da estação atualizado.", "success");
-          await recarregarTudo();
-        }
-
-        // ---------------- Histórico de auditoria (só administrador) ----------------
-        function rotuloAuditoria(texto) {
-          const [base, resto] = texto.split(" (");
-          const rotulo = ROTULO_STATUS[base] || ROTULO_STATUS_ESTACAO[base] || base;
-          return resto ? `${rotulo} (${resto}` : rotulo;
-        }
-
-        function renderAuditoria(eventos) {
-          const tbody = document.getElementById("auditoria-table-body");
-          const table = document.getElementById("auditoria-table");
-          const empty = document.getElementById("auditoria-empty");
-          tbody.innerHTML = "";
-          table.style.display = eventos.length ? "table" : "none";
-          empty.style.display = eventos.length ? "none" : "block";
-
-          for (const e of eventos) {
-            const tr = document.createElement("tr");
-            const celulas = [
-              new Date(e.data_hora).toLocaleString("pt-BR"),
-              e.usuario_email,
-              `${e.tipo_entidade === "BICICLETA" ? "Bicicleta" : "Estação"} ${e.entidade_id}`,
-              rotuloAuditoria(e.status_anterior),
-              rotuloAuditoria(e.status_novo),
-            ];
-            for (const texto of celulas) {
-              const td = document.createElement("td");
-              td.textContent = texto;
-              tr.appendChild(td);
-            }
-            tbody.appendChild(tr);
-          }
-        }
-
-        async function carregarAuditoria() {
-          if (papelAtual !== "ADMINISTRADOR") return;
-          const res = await fetch("/adminweb/auditoria", { headers: authHeader() });
-          if (res.ok) renderAuditoria(await res.json());
-        }
-
-        document
-          .getElementById("refresh-auditoria-btn")
-          .addEventListener("click", carregarAuditoria);
-
-        let estacoesCache = [];
-
-        async function carregarEstacoes() {
-          const res = await fetch("/adminweb/estacoes", {
-            headers: authHeader(),
-          });
-          if (!res.ok) return;
-          estacoesCache = await res.json();
-          renderEstacoes(estacoesCache);
-          preencherSelectEstacoes();
-        }
-
-        // ---------------- Bicicletas ----------------
-        const ROTULO_STATUS = {
-          DISPONIVEL: "Disponível",
-          EM_USO: "Em uso",
-          EM_MANUTENCAO: "Em manutenção",
-          BLOQUEADA: "Bloqueada",
-        };
-
-        function nomeDaEstacao(id) {
-          const est = estacoesCache.find((e) => e.id === id);
-          return est ? est.nome : "—";
-        }
-
-        function preencherSelectEstacoes() {
-          const select = document.getElementById("bike-estacao");
-          const escolhida = select.value;
-          select.innerHTML = "";
-          for (const est of estacoesCache) {
-            const opt = document.createElement("option");
-            opt.value = est.id;
-            opt.textContent = `${est.nome} (${est.vagas_disponiveis}/${est.capacidade_total} vagas livres)`;
-            select.appendChild(opt);
-          }
-          if (escolhida) select.value = escolhida;
-        }
-
-        function renderBicicletas(bicicletas) {
-          const tbody = document.getElementById("bicicletas-table-body");
-          const table = document.getElementById("bicicletas-table");
-          const empty = document.getElementById("bicicletas-empty");
-          tbody.innerHTML = "";
-
-          table.style.display = bicicletas.length ? "table" : "none";
-          empty.style.display = bicicletas.length ? "none" : "block";
-
-          for (const b of bicicletas) {
-            const tr = document.createElement("tr");
-            const celulas = [
-              b.id,
-              b.qr_code,
-              (ROTULO_STATUS[b.status] || b.status) +
-                (b.bloqueio_pendente ? " (bloqueio agendado)" : ""),
-              b.estacao_id == null ? "Em corrida" : nomeDaEstacao(b.estacao_id),
-            ];
-            for (const texto of celulas) {
-              const td = document.createElement("td");
-              td.textContent = texto;
-              tr.appendChild(td);
-            }
-            tr.appendChild(
-              celulaAcao(OPCOES_STATUS_BICICLETA, b.status, (status, botao) =>
-                alterarStatusBicicleta(b.id, status, botao),
-              ),
-            );
-            tbody.appendChild(tr);
-          }
-        }
-
-        async function carregarBicicletas() {
-          const res = await fetch("/adminweb/bicicletas", {
-            headers: authHeader(),
-          });
-          if (res.ok) renderBicicletas(await res.json());
-        }
-
-        document
-          .getElementById("form-bicicleta")
-          .addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const msg = document.getElementById("bicicleta-msg");
-            clearMsg(msg);
-            const button = e.target.querySelector(".btn");
-            const estacaoId = parseInt(
-              document.getElementById("bike-estacao").value,
-              10,
-            );
-            if (!estacaoId) {
-              showMsg(msg, "Cadastre uma estação primeiro.", "error");
-              return;
-            }
-
-            setLoading(button, true, "Cadastrar bicicleta");
-            try {
-              const res = await fetch("/adminweb/bicicletas", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...authHeader(),
-                },
-                body: JSON.stringify({ estacao_id: estacaoId }),
-              });
-              const data = await res.json();
-              if (!res.ok) {
-                showMsg(
-                  msg,
-                  data.detail || "Não foi possível cadastrar a bicicleta.",
-                  "error",
-                );
-                return;
-              }
-              showMsg(msg, `Bicicleta cadastrada. QR Code: ${data.qr_code}`, "success");
-              await carregarEstacoes(); // as vagas da estação mudaram
-              await carregarBicicletas();
-            } catch (err) {
-              showMsg(msg, "Não foi possível falar com o servidor.", "error");
-            } finally {
-              setLoading(button, false, "Cadastrar bicicleta");
-            }
-          });
-
-        document
-          .getElementById("refresh-bicicletas-btn")
-          .addEventListener("click", async () => {
-            await carregarEstacoes();
-            await carregarBicicletas();
-          });
-
-        const PAPEIS_EQUIPE = ["ADMINISTRADOR", "OPERADOR_CAMPO"];
-        const ROTULO_PAPEL = {
-          ADMINISTRADOR: "Administrador",
-          OPERADOR_CAMPO: "Operador de campo",
-        };
-
-        async function carregarDashboard() {
-          const token = localStorage.getItem(TOKEN_KEY);
-          if (!token) {
-            cardLogin.style.display = "block";
-            cardDashboard.style.display = "none";
-            return;
-          }
-          try {
-            const meRes = await fetch("/webclient/me", {
-              headers: authHeader(),
-            });
-            if (!meRes.ok) {
-              localStorage.removeItem(TOKEN_KEY);
-              cardLogin.style.display = "block";
-              cardDashboard.style.display = "none";
-              return;
-            }
-            const me = await meRes.json();
-            if (!PAPEIS_EQUIPE.includes(me.papel)) {
-              localStorage.removeItem(TOKEN_KEY);
-              cardLogin.style.display = "block";
-              cardDashboard.style.display = "none";
-              showMsg(
-                document.getElementById("login-msg"),
-                "Essa conta não tem acesso ao painel de gestão.",
-                "error",
-              );
-              return;
-            }
-            // Só o administrador cria estação e cadastra operador.
-            const ehAdmin = me.papel === "ADMINISTRADOR";
-            document.getElementById("bloco-estacao").style.display = ehAdmin
-              ? "block"
-              : "none";
-            document.getElementById("bloco-operador").style.display = ehAdmin
-              ? "block"
-              : "none";
-            document.getElementById("bloco-bicicleta-form").style.display =
-              ehAdmin ? "block" : "none";
-            document.getElementById("bloco-auditoria").style.display =
-              ehAdmin ? "block" : "none";
-            papelAtual = me.papel;
-            document.getElementById("admin-email").textContent =
-              `${me.email} (${ROTULO_PAPEL[me.papel]})`;
-            cardLogin.style.display = "none";
-            cardDashboard.style.display = "block";
-            await carregarEstacoes();
-            await carregarBicicletas();
-            await carregarAuditoria();
-          } catch (err) {
-            cardLogin.style.display = "block";
-            cardDashboard.style.display = "none";
-          }
-        }
-
-        document.getElementById("logout-btn").addEventListener("click", () => {
-          localStorage.removeItem(TOKEN_KEY);
-          cardLogin.style.display = "block";
-          cardDashboard.style.display = "none";
-          showTab("login");
-        });
-
-        carregarDashboard();
-      })();
-    </script>
+    <script src="js/util.js?v=3"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/gestao.js?v=3"></script>
   </body>
 </html>

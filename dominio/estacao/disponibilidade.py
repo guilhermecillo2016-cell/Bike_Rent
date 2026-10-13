@@ -29,8 +29,21 @@ def _estacoes():
 
 
 def _bicicletas_disponiveis(estacao) -> int:
-    # SUPOSIÇÃO: memoria.bicicletas = {id: BicicletaORM} com `estacao_id` e `status`.
-    return estacao.bicicletas_disponiveis  # já conta só as aptas para locação
+    from dominio.estacao import service as estacao_service
+
+    return estacao_service.bicicletas_disponiveis(estacao)  # só as aptas para locação
+
+
+def _vagas_livres(estacao) -> int:
+    # Estações injetadas nos testes já trazem o número; as reais (EstacaoORM)
+    # não guardam vagas, então é calculado pelas bicicletas que estão nela.
+    vagas = getattr(estacao, "vagas_disponiveis", None)
+    if vagas is not None:
+        return vagas
+    from dominio.estacao import service as estacao_service
+
+    return estacao_service.vagas_disponiveis(estacao)
+
 
 def _posicao(lat, lng, obrigatoria=False):
     if lat is None and lng is None:
@@ -59,7 +72,9 @@ def _item(estacao, contar_bicicletas, distancia=None) -> EstacaoDisponibilidade:
         endereco=estacao.endereco,
         status=estacao.status,
         bicicletas_disponiveis=0 if bloqueada else contar_bicicletas(estacao),
-        vagas_livres=0 if bloqueada else estacao.vagas_disponiveis,
+        vagas_livres=0 if bloqueada else _vagas_livres(estacao),
+        latitude=getattr(estacao, "latitude", None),
+        longitude=getattr(estacao, "longitude", None),
         distancia_metros=None if distancia is None else round(distancia, 1),
     )
 

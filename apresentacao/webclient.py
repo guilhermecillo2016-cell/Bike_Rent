@@ -172,7 +172,9 @@ def encerrar_locacao(
     usuario: UsuarioORM = Depends(usuario_service.get_current_user),
 ):
     try:
-        return locacao_service.encerrar_locacao(usuario.email, dados.estacao_id, dados.descricao_avaria)
+        return locacao_service.encerrar_locacao(
+            usuario.email, dados.estacao_id, descricao_avaria=dados.descricao_avaria
+        )
     except locacao_service.EstacaoDestinoIndisponivel as e:
         return _resposta_estacao_indisponivel(e)
 

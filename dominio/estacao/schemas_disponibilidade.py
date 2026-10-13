@@ -14,4 +14,6 @@ class EstacaoDisponibilidade(BaseModel):
     status: StatusEstacao
     bicicletas_disponiveis: int
     vagas_livres: int
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     distancia_metros: Optional[float] = None  # só quando há lat/lng
