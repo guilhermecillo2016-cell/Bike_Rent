@@ -3,70 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Bike Rent — cadastro e login</title>
+    <meta name="theme-color" content="#12213B" />
+    <title>Bike Rent</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="style.css" />
-    <style>
-      /* Novos: seletor de tipo do cartão e botão de remover */
-      .field select {
-        width: 100%;
-        font: inherit;
-        padding: 12px 14px;
-        border-radius: 10px;
-        border: 1px solid #c7d0e0;
-        background: #fff;
-        color: inherit;
-      }
-      .cartao-visual {
-        position: relative;
-      }
-      .cartao-remover {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font: inherit;
-        font-size: 12px;
-        font-weight: 600;
-        padding: 5px 10px;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.45);
-        background: rgba(0, 0, 0, 0.25);
-        color: #fff;
-        cursor: pointer;
-      }
-      .cartao-remover:hover:not(:disabled) {
-        background: rgba(0, 0, 0, 0.45);
-      }
-      .cartao-remover:focus-visible {
-        outline: 2px solid #f2b705;
-        outline-offset: 2px;
-      }
-      .cartao-remover:disabled {
-        opacity: 0.6;
-        cursor: wait;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css?v=3" />
   </head>
   <body>
-    <div class="layout">
-      <!-- Painel esquerdo -->
+    <!-- =============================================================
+         TELA DE ENTRADA (login e cadastro)
+         ============================================================= -->
+    <div class="layout" id="tela-auth">
       <section class="hero">
         <div class="hero-brand">
           <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
             <circle cx="6.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
             <circle cx="19.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
-            <path
-              d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13"
-              stroke="#F5F3ED"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13" stroke="#F5F3ED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
           Bike Rent
         </div>
@@ -79,19 +36,8 @@
           </p>
         </div>
 
-        <svg
-          class="route-map"
-          viewBox="0 0 420 420"
-          fill="none"
-          aria-hidden="true"
-        >
-          <path
-            d="M20 340 C 90 340, 90 260, 150 250 S 230 180, 260 140 S 330 100, 400 80"
-            stroke="#41598A"
-            stroke-width="2"
-            stroke-dasharray="2 10"
-            stroke-linecap="round"
-          />
+        <svg class="route-map" viewBox="0 0 420 420" fill="none" aria-hidden="true">
+          <path d="M20 340 C 90 340, 90 260, 150 250 S 230 180, 260 140 S 330 100, 400 80" stroke="#41598A" stroke-width="2" stroke-dasharray="2 10" stroke-linecap="round" />
           <circle cx="20" cy="340" r="7" fill="#F2B705" />
           <circle cx="150" cy="250" r="6" fill="#C7D0E0" />
           <circle cx="260" cy="140" r="6" fill="#C7D0E0" />
@@ -104,660 +50,328 @@
         </div>
       </section>
 
-      <!-- Painel direito -->
       <section class="panel">
-        <!-- Cadastro / login -->
         <div class="card" id="auth-forms">
           <div class="tabs" role="tablist">
-            <button
-              class="tab"
-              id="tab-login"
-              role="tab"
-              aria-selected="true"
-              aria-controls="form-login"
-            >
-              Entrar
-            </button>
-            <button
-              class="tab"
-              id="tab-register"
-              role="tab"
-              aria-selected="false"
-              aria-controls="form-register"
-            >
-              Cadastrar
-            </button>
+            <button class="tab" id="tab-login" role="tab" aria-selected="true" aria-controls="form-login">Entrar</button>
+            <button class="tab" id="tab-register" role="tab" aria-selected="false" aria-controls="form-register">Cadastrar</button>
           </div>
 
-          <!-- Login -->
-          <form id="form-login" class="active" novalidate>
+          <form id="form-login" class="alternavel active" novalidate>
             <h2>Bem-vindo de volta</h2>
             <p class="sub">Entre com sua conta para continuar.</p>
-
             <div class="field">
               <label for="login-email">E-mail</label>
-              <input
-                id="login-email"
-                type="email"
-                autocomplete="email"
-                required
-              />
+              <input id="login-email" type="email" autocomplete="email" required />
             </div>
             <div class="field">
               <label for="login-password">Senha</label>
-              <input
-                id="login-password"
-                type="password"
-                autocomplete="current-password"
-                required
-              />
+              <input id="login-password" type="password" autocomplete="current-password" required />
             </div>
-
             <button class="btn" type="submit">Entrar</button>
             <div class="msg" id="login-msg"></div>
           </form>
 
-          <!-- Cadastro -->
-          <form id="form-register" novalidate>
+          <form id="form-register" class="alternavel" novalidate>
             <h2>Criar conta</h2>
             <p class="sub">Leva menos de dois minutos.</p>
-
             <div class="field">
               <label for="reg-nome">Nome</label>
               <input id="reg-nome" type="text" autocomplete="name" required />
             </div>
             <div class="field">
               <label for="reg-email">E-mail</label>
-              <input
-                id="reg-email"
-                type="email"
-                autocomplete="email"
-                required
-              />
+              <input id="reg-email" type="email" autocomplete="email" required />
             </div>
             <div class="field">
               <label for="reg-password">Senha</label>
-              <input
-                id="reg-password"
-                type="password"
-                autocomplete="new-password"
-                minlength="6"
-                required
-              />
+              <input id="reg-password" type="password" autocomplete="new-password" minlength="6" required />
               <small>Mínimo de 6 caracteres.</small>
             </div>
             <div class="field">
               <label for="reg-cpf">CPF</label>
-              <input
-                id="reg-cpf"
-                type="text"
-                inputmode="numeric"
-                placeholder="000.000.000-00"
-                maxlength="14"
-                required
-              />
+              <input id="reg-cpf" type="text" inputmode="numeric" placeholder="000.000.000-00" maxlength="14" required />
             </div>
             <div class="field">
               <label for="reg-telefone">Telefone</label>
-              <input
-                id="reg-telefone"
-                type="tel"
-                inputmode="numeric"
-                placeholder="(11) 99999-8888"
-                maxlength="15"
-                required
-              />
+              <input id="reg-telefone" type="tel" inputmode="numeric" placeholder="(11) 99999-8888" maxlength="15" required />
             </div>
             <div class="field">
-              <label for="reg-endereco"
-                >Endereço
-                <span style="font-weight: 400; color: var(--slate)"
-                  >(opcional)</span
-                ></label
-              >
-              <input
-                id="reg-endereco"
-                type="text"
-                placeholder="Rua, número, bairro"
-              />
+              <label for="reg-endereco">Endereço <span class="opcional">(opcional)</span></label>
+              <input id="reg-endereco" type="text" placeholder="Rua, número, bairro" />
             </div>
-
             <button class="btn" type="submit">Criar conta</button>
             <div class="msg" id="register-msg"></div>
           </form>
 
-          <p class="footer-link">
-            <a href="/gestao.html">Área administrativa</a>
-          </p>
-        </div>
-
-        <!-- Sessão autenticada -->
-        <div class="card wide session" id="session">
-          <div class="avatar" id="session-initial">?</div>
-          <h2>Minha conta</h2>
-          <p class="sub">Gerencie seus dados e sua forma de pagamento.</p>
-
-          <div class="field-row">
-            <span>E-mail</span><span id="session-email">—</span>
-          </div>
-          <div class="field-row">
-            <span>CPF</span><span id="session-cpf">—</span>
-          </div>
-          <div class="field-row">
-            <span>Telefone</span><span id="session-telefone">—</span>
-          </div>
-          <div class="field-row">
-            <span>Endereço</span><span id="session-endereco">—</span>
-          </div>
-
-          <!-- Cartões vinculados -->
-          <div class="section-title">Forma de pagamento</div>
-          <p class="section-sub">
-            Vincule um cartão para pagar suas corridas automaticamente.
-          </p>
-
-          <div id="cartoes-lista"></div>
-          <div class="empty-state" id="cartoes-empty" style="display: none">
-            Nenhum cartão vinculado ainda.
-          </div>
-
-          <form
-            id="form-cartao"
-            novalidate
-            style="display: block; margin-top: 16px"
-          >
-            <div class="field">
-              <label for="cartao-tipo">Tipo do cartão</label>
-              <select id="cartao-tipo" required>
-                <option value="" selected disabled>Selecione</option>
-                <option value="credito">Crédito</option>
-                <option value="debito">Débito</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="cartao-numero">Número do cartão</label>
-              <input
-                id="cartao-numero"
-                type="text"
-                inputmode="numeric"
-                placeholder="0000 0000 0000 0000"
-                maxlength="19"
-                required
-              />
-            </div>
-            <div class="field">
-              <label for="cartao-nome">Nome impresso no cartão</label>
-              <input
-                id="cartao-nome"
-                type="text"
-                placeholder="Como está no cartão"
-                required
-              />
-            </div>
-            <div class="field-row-2">
-              <div class="field">
-                <label for="cartao-validade">Validade</label>
-                <input
-                  id="cartao-validade"
-                  type="text"
-                  placeholder="MM/AA"
-                  maxlength="5"
-                  required
-                />
-              </div>
-              <div class="field">
-                <label for="cartao-cvv">CVV</label>
-                <input
-                  id="cartao-cvv"
-                  type="text"
-                  inputmode="numeric"
-                  placeholder="123"
-                  maxlength="3"
-                  required
-                />
-              </div>
-            </div>
-            <div class="field">
-              <label for="cartao-apelido"
-                >Apelido
-                <span style="font-weight: 400; color: var(--slate)"
-                  >(opcional)</span
-                ></label
-              >
-              <input
-                id="cartao-apelido"
-                type="text"
-                placeholder="Ex: cartão do trabalho"
-              />
-            </div>
-
-            <button class="btn" type="submit">Vincular cartão</button>
-            <div class="msg" id="cartao-msg"></div>
-          </form>
-
-          <!-- Estações disponíveis -->
-          <div class="section-title">Estações disponíveis</div>
-          <p class="section-sub">
-            Onde você pode retirar ou devolver uma bicicleta agora.
-          </p>
-          <div id="estacoes-lista"></div>
-          <div class="empty-state" id="estacoes-empty" style="display: none">
-            Nenhuma estação cadastrada ainda.
-          </div>
-
-          <button class="btn secondary logout" id="logout-btn" type="button">
-            Sair
-          </button>
-          <p class="footer-link">
-            <a href="/gestao.html">Área administrativa</a>
-          </p>
+          <p class="footer-link"><a href="/gestao.html">Área administrativa</a></p>
         </div>
       </section>
     </div>
 
-    <script>
-      (function () {
-        const TOKEN_KEY = "rota_access_token";
+    <!-- =============================================================
+         APLICATIVO (depois do login)
+         ============================================================= -->
+    <div class="app" id="tela-app" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <svg width="24" height="24" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+            <circle cx="6.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
+            <circle cx="19.5" cy="18" r="5" stroke="#F2B705" stroke-width="2" />
+            <path d="M6.5 18L11 8H15L19.5 18M11 8H9M15 8L18 13" stroke="#F5F3ED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Bike Rent
+        </div>
+        <div class="quem">
+          <span class="nome-longo">Olá, <strong id="topo-nome">—</strong></span>
+          <button class="btn-link" id="btn-sair" type="button">Sair</button>
+        </div>
+      </header>
 
-        const tabLogin = document.getElementById("tab-login");
-        const tabRegister = document.getElementById("tab-register");
-        const formLogin = document.getElementById("form-login");
-        const formRegister = document.getElementById("form-register");
-        const authForms = document.getElementById("auth-forms");
-        const sessionView = document.getElementById("session");
+      <nav class="tabbar inferior" role="tablist" aria-label="Seções do aplicativo">
+        <button role="tab" data-aba="estacoes" aria-selected="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 1113 0c0 5.4-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.5" /></svg>
+          Estações
+        </button>
+        <button role="tab" data-aba="pedalar" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3.5" /><circle cx="18" cy="17" r="3.5" /><path d="M6 17l4-8h5l3 8M10 9H8M15 9l-2.5 4" /></svg>
+          Pedalar
+        </button>
+        <button role="tab" data-aba="pagamentos" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 10h18M7 15h4" /></svg>
+          Pagamentos
+        </button>
+        <button role="tab" data-aba="conta" aria-selected="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6" /></svg>
+          Conta
+        </button>
+      </nav>
 
-        function showTab(which) {
-          const loginActive = which === "login";
-          tabLogin.setAttribute("aria-selected", String(loginActive));
-          tabRegister.setAttribute("aria-selected", String(!loginActive));
-          formLogin.classList.toggle("active", loginActive);
-          formRegister.classList.toggle("active", !loginActive);
-        }
-        tabLogin.addEventListener("click", () => showTab("login"));
-        tabRegister.addEventListener("click", () => showTab("register"));
+      <main class="app-main estreito">
+        <!-- ================= ESTAÇÕES (mapa e lista) ================= -->
+        <section class="aba" id="aba-estacoes" role="tabpanel">
+          <div class="barra-ferramentas">
+            <h2 class="titulo-aba">Estações</h2>
+            <div class="grupo">
+              <button class="btn secondary pequeno" id="btn-perto" type="button">Perto de mim</button>
+              <button class="btn secondary pequeno" id="btn-atualizar-estacoes" type="button">Atualizar</button>
+            </div>
+          </div>
+          <div id="mapa-bloco">
+            <div id="mapa" role="img" aria-label="Mapa com as estações"></div>
+          </div>
+          <div class="aviso info" id="mapa-aviso" hidden></div>
+          <div class="est-lista" id="est-lista"></div>
+          <div class="vazio" id="est-vazio" hidden>Nenhuma estação cadastrada ainda.</div>
+          <div class="msg" id="est-msg"></div>
+        </section>
 
-        function showMsg(el, text, type) {
-          el.textContent = text;
-          el.className = "msg show " + type;
-        }
-        function clearMsg(el) {
-          el.className = "msg";
-        }
-        function setLoading(button, loading, idleLabel) {
-          button.disabled = loading;
-          button.textContent = loading ? "Enviando..." : idleLabel;
-        }
-        function authHeader() {
-          return { Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}` };
-        }
-        function esc(value) {
-          const d = document.createElement("div");
-          d.textContent = value == null ? "" : String(value);
-          return d.innerHTML;
-        }
-        const TIPOS = { CARTAO_CREDITO: "Crédito", CARTAO_DEBITO: "Débito" };
+        <!-- ================= PEDALAR (QR, corrida, devolução) ================= -->
+        <section class="aba" id="aba-pedalar" role="tabpanel" hidden>
+          <!-- carregando -->
+          <div class="caixa" data-visao="carregando" hidden>
+            <div class="heroi"><div class="girando" style="margin:12px auto"></div><p>Verificando sua corrida…</p></div>
+          </div>
 
-        // ---- Máscaras simples ----
-        document.getElementById("reg-cpf").addEventListener("input", (e) => {
-          let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-          v = v
-            .replace(/(\d{3})(\d)/, "$1.$2")
-            .replace(/(\d{3})(\d)/, "$1.$2")
-            .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-          e.target.value = v;
-        });
-        document
-          .getElementById("reg-telefone")
-          .addEventListener("input", (e) => {
-            let v = e.target.value.replace(/\D/g, "").slice(0, 11);
-            if (v.length > 10) {
-              v = v.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3");
-            } else if (v.length > 5) {
-              v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
-            } else if (v.length > 2) {
-              v = v.replace(/(\d{2})(\d{0,5})/, "($1) $2");
-            } else if (v.length > 0) {
-              v = v.replace(/(\d{0,2})/, "($1");
-            }
-            e.target.value = v;
-          });
-        document
-          .getElementById("cartao-numero")
-          .addEventListener("input", (e) => {
-            let v = e.target.value.replace(/\D/g, "").slice(0, 16);
-            e.target.value = v.replace(/(\d{4})(?=\d)/g, "$1 ");
-          });
-        document
-          .getElementById("cartao-validade")
-          .addEventListener("input", (e) => {
-            let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-            if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-            e.target.value = v;
-          });
-        document.getElementById("cartao-cvv").addEventListener("input", (e) => {
-          e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
-        });
+          <!-- ocioso: pronto para escanear -->
+          <div class="caixa" data-visao="ocioso" hidden>
+            <div class="heroi">
+              <div class="icone-grande">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V5a1 1 0 011-1h3M16 4h3a1 1 0 011 1v3M20 16v3a1 1 0 01-1 1h-3M8 20H5a1 1 0 01-1-1v-3" /><rect x="8" y="8" width="3" height="3" /><rect x="13" y="8" width="3" height="3" /><rect x="8" y="13" width="3" height="3" /><path d="M13 13h3v3" /></svg>
+              </div>
+              <h2>Pronto para pedalar?</h2>
+              <p>Aponte a câmera para o QR Code da bicicleta. A corrida só começa quando a trava abrir.</p>
+            </div>
+            <div id="ocioso-aviso"></div>
+            <div class="acoes-empilhadas">
+              <button class="btn grande" id="btn-escanear" type="button">Escanear QR Code</button>
+              <button class="btn secondary" id="btn-digitar" type="button">Digitar o código da bicicleta</button>
+            </div>
+            <form id="form-codigo" class="acoes-empilhadas" style="margin-top:14px" hidden novalidate>
+              <div class="field" style="margin:0">
+                <label for="codigo-manual">Código da bicicleta</label>
+                <input id="codigo-manual" type="text" placeholder="BIKE-XXXXXXXXXXXX" autocomplete="off" autocapitalize="characters" required />
+                <small>O código fica impresso abaixo do QR Code.</small>
+              </div>
+              <button class="btn" type="submit">Validar e destravar</button>
+            </form>
+            <div class="msg" id="ocioso-msg" aria-live="polite"></div>
+            <div class="sugestoes" id="sugestoes-bicicletas"></div>
+          </div>
 
-        // ---------------- Cadastro ----------------
-        formRegister.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const msg = document.getElementById("register-msg");
-          clearMsg(msg);
-          const button = formRegister.querySelector(".btn");
+          <!-- escaneando -->
+          <div class="caixa" data-visao="escaneando" hidden>
+            <div class="scanner">
+              <video id="camera" playsinline muted></video>
+              <div class="moldura"></div>
+              <div class="legenda-scanner" id="scanner-legenda" aria-live="polite">Abrindo a câmera…</div>
+            </div>
+            <div class="grade col2" style="margin-top:14px">
+              <button class="btn secondary" id="btn-cancelar-scan" type="button">Cancelar</button>
+              <button class="btn secondary" id="btn-scan-digitar" type="button">Digitar código</button>
+            </div>
+          </div>
 
-          const payload = {
-            nome: document.getElementById("reg-nome").value.trim(),
-            email: document.getElementById("reg-email").value.trim(),
-            senha: document.getElementById("reg-password").value,
-            cpf: document.getElementById("reg-cpf").value.trim(),
-            telefone: document.getElementById("reg-telefone").value.trim(),
-            endereco:
-              document.getElementById("reg-endereco").value.trim() || null,
-          };
+          <!-- destravando -->
+          <div class="caixa" data-visao="destravando" hidden>
+            <div class="heroi"><h2>Destravando a bicicleta</h2><p id="destravando-sub">Aguarde alguns segundos…</p></div>
+            <ol class="passos" id="passos-inicio" aria-live="polite">
+              <li data-passo="1"><span class="marca"></span>Validando o QR Code</li>
+              <li data-passo="2"><span class="marca"></span>Aguardando liberação da trava</li>
+              <li data-passo="3"><span class="marca"></span>Corrida iniciada</li>
+            </ol>
+          </div>
 
-          setLoading(button, true, "Criar conta");
-          try {
-            const res = await fetch("/webclient/register", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              showMsg(
-                msg,
-                data.detail || "Não foi possível criar a conta.",
-                "error",
-              );
-              return;
-            }
-            showMsg(
-              msg,
-              "Conta criada. Agora entre com seus dados.",
-              "success",
-            );
-            document.getElementById("login-email").value = payload.email;
-            formRegister.reset();
-            setTimeout(() => showTab("login"), 900);
-          } catch (err) {
-            showMsg(msg, "Não foi possível falar com o servidor.", "error");
-          } finally {
-            setLoading(button, false, "Criar conta");
-          }
-        });
+          <!-- em corrida -->
+          <div class="caixa" data-visao="corrida" hidden>
+            <div class="corrida-topo"><span class="ponto-vivo" id="ponto-vivo"></span><span id="corrida-estado">Corrida em andamento</span></div>
+            <div class="cronometro" id="corrida-cronometro" aria-live="off">00:00</div>
+            <div class="cronometro-legenda">tempo de corrida</div>
+            <div class="detalhes">
+              <div><small>Saiu de</small><b id="corrida-origem">—</b></div>
+              <div><small>Bicicleta</small><b id="corrida-bicicleta">—</b></div>
+              <div><small>Custo estimado</small><b id="corrida-custo">—</b></div>
+              <div><small>Pacote cobre</small><b id="corrida-pacote">—</b></div>
+            </div>
+            <div class="aviso" id="corrida-offline" hidden>
+              Sem conexão no momento. Fique tranquilo: o tempo continua contando no servidor.
+            </div>
+            <button class="btn grande" id="btn-devolver" type="button">Devolver bicicleta</button>
+          </div>
 
-        // ---------------- Login ----------------
-        formLogin.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const msg = document.getElementById("login-msg");
-          clearMsg(msg);
-          const button = formLogin.querySelector(".btn");
+          <!-- devolução -->
+          <div class="caixa" data-visao="devolucao" hidden>
+            <h2>Devolver bicicleta</h2>
+            <p class="sub">Escolha a estação onde você vai deixar a bicicleta e encaixe-a em uma vaga livre.</p>
+            <form id="form-devolucao" novalidate>
+              <div class="field">
+                <label for="dev-estacao">Estação de destino</label>
+                <select id="dev-estacao" required></select>
+                <small id="dev-dica"></small>
+              </div>
+              <div class="field">
+                <label style="display:flex; gap:8px; align-items:center; font-weight:500">
+                  <input id="dev-avaria-check" type="checkbox" style="width:auto" />
+                  Quero reportar um problema na bicicleta
+                </label>
+              </div>
+              <div class="field" id="dev-avaria-campo" hidden>
+                <label for="dev-avaria">O que aconteceu?</label>
+                <textarea id="dev-avaria" maxlength="500" placeholder="Ex.: pneu murcho, freio avariado"></textarea>
+                <small>A bicicleta será bloqueada para manutenção até a revisão.</small>
+              </div>
+              <div class="grade col2">
+                <button class="btn secondary" id="btn-voltar-corrida" type="button">Voltar</button>
+                <button class="btn" id="btn-confirmar-devolucao" type="submit">Confirmar devolução</button>
+              </div>
+            </form>
+            <div class="msg" id="dev-msg" aria-live="polite"></div>
+            <div class="sugestoes" id="dev-sugestoes"></div>
+          </div>
 
-          const body = new URLSearchParams();
-          body.append(
-            "username",
-            document.getElementById("login-email").value.trim(),
-          );
-          body.append(
-            "password",
-            document.getElementById("login-password").value,
-          );
+          <!-- confirmando devolução -->
+          <div class="caixa" data-visao="confirmando" hidden>
+            <div class="heroi"><h2>Confirmando a devolução</h2><p>Aguardando a trava confirmar que a bicicleta foi encaixada…</p></div>
+            <ol class="passos" id="passos-devolucao" aria-live="polite">
+              <li data-passo="1"><span class="marca"></span>Aguardando confirmação do travamento</li>
+              <li data-passo="2"><span class="marca"></span>Calculando o valor da corrida</li>
+              <li data-passo="3"><span class="marca"></span>Emitindo o comprovante</li>
+            </ol>
+          </div>
 
-          setLoading(button, true, "Entrar");
-          try {
-            const res = await fetch("/webclient/login", {
-              method: "POST",
-              headers: { "Content-Type": "application/x-www-form-urlencoded" },
-              body: body.toString(),
-            });
-            const data = await res.json();
-            if (!res.ok) {
-              showMsg(
-                msg,
-                data.detail || "E-mail ou senha incorretos.",
-                "error",
-              );
-              return;
-            }
-            localStorage.setItem(TOKEN_KEY, data.access_token);
-            formLogin.reset();
-            await carregarSessao();
-          } catch (err) {
-            showMsg(msg, "Não foi possível falar com o servidor.", "error");
-          } finally {
-            setLoading(button, false, "Entrar");
-          }
-        });
+          <!-- concluído -->
+          <div class="caixa" data-visao="concluido" hidden>
+            <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></div>
+            <div class="heroi" style="padding-top:0"><h2>Devolução confirmada</h2><p id="concluido-sub">Obrigado por pedalar com a gente.</p></div>
+            <div id="concluido-avisos"></div>
+            <div class="recibo" id="recibo"></div>
+            <div class="grade col2">
+              <button class="btn secondary" id="btn-ver-estacoes" type="button">Ver estações</button>
+              <button class="btn" id="btn-nova-corrida" type="button">Nova corrida</button>
+            </div>
+          </div>
+        </section>
 
-        // ---------------- Vincular cartão ----------------
-        document
-          .getElementById("form-cartao")
-          .addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const msg = document.getElementById("cartao-msg");
-            clearMsg(msg);
-            const button = e.target.querySelector(".btn");
+        <!-- ================= PAGAMENTOS (cartões e pacotes) ================= -->
+        <section class="aba" id="aba-pagamentos" role="tabpanel" hidden>
+          <h2 class="titulo-aba">Pagamentos</h2>
+          <p class="sub">Cartões vinculados e pacotes de minutos.</p>
 
-            const tipo = document.getElementById("cartao-tipo").value;
-            if (!tipo) {
-              showMsg(msg, "Selecione crédito ou débito.", "error");
-              return;
-            }
+          <div class="caixa">
+            <h2>Meus cartões</h2>
+            <p class="sub">Para alugar uma bicicleta você precisa de um cartão de crédito vinculado.</p>
+            <div id="cartoes-lista"></div>
+            <div class="vazio" id="cartoes-vazio" hidden>Nenhum cartão vinculado ainda.</div>
+            <div class="msg" id="cartao-msg" aria-live="polite"></div>
 
-            const payload = {
-              tipo: tipo, // "credito" | "debito"
-              numero_cartao: document
-                .getElementById("cartao-numero")
-                .value.replace(/\s/g, ""),
-              nome_titular: document.getElementById("cartao-nome").value.trim(),
-              validade: document.getElementById("cartao-validade").value.trim(),
-              cvv: document.getElementById("cartao-cvv").value.trim(),
-              apelido:
-                document.getElementById("cartao-apelido").value.trim() || null,
-            };
+            <form id="form-cartao" style="margin-top:16px" novalidate>
+              <div class="field">
+                <label for="cartao-tipo">Tipo do cartão</label>
+                <select id="cartao-tipo" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="credito">Crédito</option>
+                  <option value="debito">Débito</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="cartao-numero">Número do cartão</label>
+                <input id="cartao-numero" type="text" inputmode="numeric" placeholder="0000 0000 0000 0000" maxlength="19" autocomplete="off" required />
+                <small>Para testar: 4111 1111 1111 1111, com qualquer validade futura.</small>
+              </div>
+              <div class="field">
+                <label for="cartao-nome">Nome impresso no cartão</label>
+                <input id="cartao-nome" type="text" placeholder="Como está no cartão" required />
+              </div>
+              <div class="field-row-2">
+                <div class="field">
+                  <label for="cartao-validade">Validade</label>
+                  <input id="cartao-validade" type="text" placeholder="MM/AA" maxlength="5" required />
+                </div>
+                <div class="field">
+                  <label for="cartao-cvv">CVV</label>
+                  <input id="cartao-cvv" type="text" inputmode="numeric" placeholder="123" maxlength="4" autocomplete="off" required />
+                </div>
+              </div>
+              <div class="field">
+                <label for="cartao-apelido">Apelido <span class="opcional">(opcional)</span></label>
+                <input id="cartao-apelido" type="text" placeholder="Ex: cartão do trabalho" />
+              </div>
+              <button class="btn" type="submit">Vincular cartão</button>
+            </form>
+          </div>
 
-            setLoading(button, true, "Vincular cartão");
-            try {
-              const res = await fetch("/webclient/pagamentos", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...authHeader(),
-                },
-                body: JSON.stringify(payload),
-              });
-              const data = await res.json();
-              if (!res.ok) {
-                showMsg(
-                  msg,
-                  data.detail || "Não foi possível vincular o cartão.",
-                  "error",
-                );
-                return;
-              }
-              showMsg(msg, "Cartão vinculado com sucesso.", "success");
-              e.target.reset();
-              await carregarCartoes();
-            } catch (err) {
-              showMsg(msg, "Não foi possível falar com o servidor.", "error");
-            } finally {
-              setLoading(button, false, "Vincular cartão");
-            }
-          });
+          <div class="caixa">
+            <h2>Pacotes de minutos</h2>
+            <p class="sub">Compre minutos antes e use primeiro o pacote; só o que passar dele é cobrado no cartão.</p>
+            <div class="saldo-destaque"><b id="saldo-pacotes">0</b><span>minutos disponíveis</span></div>
+            <div class="grade col3" id="catalogo-pacotes" style="margin-top:16px"></div>
+            <div class="msg" id="pacote-msg" aria-live="polite"></div>
+            <p class="sub" style="margin-top:12px">O pagamento por PIX chega na próxima versão; por enquanto a compra é no cartão de crédito.</p>
+            <h3 style="font-size:1rem; margin:20px 0 10px">Meus pacotes</h3>
+            <div id="meus-pacotes"></div>
+            <div class="vazio" id="pacotes-vazio" hidden>Você ainda não comprou nenhum pacote.</div>
+          </div>
+        </section>
 
-        // ---------------- Remover cartão ----------------
-        async function removerCartao(id, button) {
-          if (!confirm("Remover este cartão?")) return;
-          const msg = document.getElementById("cartao-msg");
-          clearMsg(msg);
-          button.disabled = true;
-          button.textContent = "Removendo...";
-          try {
-            const res = await fetch(
-              `/webclient/pagamentos/${encodeURIComponent(id)}`,
-              { method: "DELETE", headers: authHeader() },
-            );
-            if (!res.ok) {
-              let detail = "";
-              try {
-                detail = (await res.json()).detail;
-              } catch (_) {}
-              showMsg(
-                msg,
-                detail || "Não foi possível remover o cartão.",
-                "error",
-              );
-              button.disabled = false;
-              button.textContent = "Remover";
-              return;
-            }
-            showMsg(msg, "Cartão removido.", "success");
-            await carregarCartoes();
-          } catch (err) {
-            showMsg(msg, "Não foi possível falar com o servidor.", "error");
-            button.disabled = false;
-            button.textContent = "Remover";
-          }
-        }
+        <!-- ================= CONTA ================= -->
+        <section class="aba" id="aba-conta" role="tabpanel" hidden>
+          <h2 class="titulo-aba">Minha conta</h2>
+          <p class="sub">Seus dados cadastrados.</p>
+          <div class="caixa">
+            <div class="avatar" id="conta-iniciais">?</div>
+            <div class="perfil-linha"><span>Nome</span><span id="conta-nome">—</span></div>
+            <div class="perfil-linha"><span>E-mail</span><span id="conta-email">—</span></div>
+            <div class="perfil-linha"><span>CPF</span><span id="conta-cpf">—</span></div>
+            <div class="perfil-linha"><span>Telefone</span><span id="conta-telefone">—</span></div>
+            <div class="perfil-linha"><span>Endereço</span><span id="conta-endereco">—</span></div>
+          </div>
+          <button class="btn secondary" id="btn-sair-conta" type="button" style="margin-top:16px">Sair da conta</button>
+        </section>
+      </main>
+    </div>
 
-        // ---------------- Renderização ----------------
-        function renderCartoes(cartoes) {
-          const wrap = document.getElementById("cartoes-lista");
-          const empty = document.getElementById("cartoes-empty");
-          wrap.innerHTML = "";
-          if (!cartoes.length) {
-            empty.style.display = "block";
-            return;
-          }
-          empty.style.display = "none";
-
-          for (const c of cartoes) {
-            const tipoLabel = TIPOS[c.tipo] || "";
-            const partes = [c.bandeira, tipoLabel, c.apelido].filter(Boolean);
-            const div = document.createElement("div");
-            div.className = "cartao-visual";
-            div.innerHTML = `
-        <div class="bandeira">${esc(partes.join(" · "))}</div>
-        <div class="numero">•••• •••• •••• ${esc(c.ultimos_digitos)}</div>
-        <div class="rodape"><span>${esc(c.nome_titular)}</span><span>${esc(c.validade)}</span></div>
-      `;
-            const btn = document.createElement("button");
-            btn.type = "button";
-            btn.className = "cartao-remover";
-            btn.textContent = "Remover";
-            btn.setAttribute(
-              "aria-label",
-              `Remover cartão final ${c.ultimos_digitos}`,
-            );
-            btn.addEventListener("click", () => removerCartao(c.token, btn));
-            div.appendChild(btn);
-            wrap.appendChild(div);
-          }
-        }
-
-        function renderEstacoes(estacoes) {
-          const wrap = document.getElementById("estacoes-lista");
-          const empty = document.getElementById("estacoes-empty");
-          wrap.innerHTML = "";
-          document.getElementById("hero-estacoes-count").textContent =
-            estacoes.length;
-          if (!estacoes.length) {
-            empty.style.display = "block";
-            return;
-          }
-          empty.style.display = "none";
-
-          for (const est of estacoes) {
-            const operacional = est.status === "OPERACIONAL";
-            const div = document.createElement("div");
-            div.className =
-              "estacao-item" + (operacional ? "" : " indisponivel");
-
-            const info = document.createElement("div");
-            info.className = "info";
-            const nome = document.createElement("strong");
-            nome.textContent = est.nome;
-            const endereco = document.createElement("span");
-            endereco.textContent = est.endereco;
-            info.append(nome, endereco);
-
-            const vagas = document.createElement("div");
-            vagas.className = "vagas";
-            const linhas = operacional
-              ? [
-                  `${est.bicicletas_disponiveis} ${est.bicicletas_disponiveis === 1 ? "bicicleta pronta" : "bicicletas prontas"}`,
-                  `${est.vagas_disponiveis}/${est.capacidade_total} vagas`,
-                ]
-              : [est.status === "BLOQUEADA" ? "Bloqueada" : "Em manutenção"];
-            for (const linha of linhas) {
-              const span = document.createElement("span");
-              span.textContent = linha;
-              vagas.appendChild(span);
-            }
-
-            div.append(info, vagas);
-            wrap.appendChild(div);
-          }
-        }
-
-        async function carregarCartoes() {
-          const res = await fetch("/webclient/pagamentos", {
-            headers: authHeader(),
-          });
-          if (res.ok) renderCartoes(await res.json());
-        }
-
-        async function carregarEstacoes() {
-          const res = await fetch("/webclient/estacoes");
-          if (res.ok) renderEstacoes(await res.json());
-        }
-
-        async function carregarSessao() {
-          const token = localStorage.getItem(TOKEN_KEY);
-          await carregarEstacoes();
-
-          if (!token) {
-            authForms.style.display = "block";
-            sessionView.classList.remove("active");
-            return;
-          }
-          try {
-            const res = await fetch("/webclient/me", { headers: authHeader() });
-            if (!res.ok) {
-              localStorage.removeItem(TOKEN_KEY);
-              authForms.style.display = "block";
-              sessionView.classList.remove("active");
-              return;
-            }
-            const user = await res.json();
-            document.getElementById("session-email").textContent = user.email;
-            document.getElementById("session-cpf").textContent = user.cpf;
-            document.getElementById("session-telefone").textContent =
-              user.telefone;
-            document.getElementById("session-endereco").textContent =
-              user.endereco || "Não informado";
-            document.getElementById("session-initial").textContent = user.email
-              .charAt(0)
-              .toUpperCase();
-
-            authForms.style.display = "none";
-            sessionView.classList.add("active");
-            await carregarCartoes();
-          } catch (err) {
-            authForms.style.display = "block";
-            sessionView.classList.remove("active");
-          }
-        }
-
-        document.getElementById("logout-btn").addEventListener("click", () => {
-          localStorage.removeItem(TOKEN_KEY);
-          authForms.style.display = "block";
-          sessionView.classList.remove("active");
-          showTab("login");
-        });
-
-        carregarSessao();
-      })();
-    </script>
+    <script src="js/util.js?v=3"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/ciclista.js?v=3"></script>
   </body>
 </html>

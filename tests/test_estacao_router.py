@@ -21,7 +21,8 @@ def test_get_estacoes_devolve_disponibilidade(monkeypatch):
     primeiro = r.json()[0]
     assert set(primeiro) == {
         "id", "nome", "endereco", "status",
-        "bicicletas_disponiveis", "vagas_livres", "distancia_metros",
+        "bicicletas_disponiveis", "vagas_livres", "latitude", "longitude",
+        "distancia_metros",
     }
     assert primeiro["distancia_metros"] is None
 
