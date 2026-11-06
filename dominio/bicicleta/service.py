@@ -72,7 +72,7 @@ def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> BicicletaORM:
     auditoria e a regra da bicicleta em uso, é da A5 e usa esta função.
     """
     bicicleta = obter_bicicleta(bicicleta_id)
-    bicicleta.status = StatusBicicleta(novo_status)  # valor inválido -> ValueError
+    bicicleta.set_status(novo_status)  # valor inválido -> ValueError
     return bicicleta
 
 
@@ -92,42 +92,14 @@ def alterar_status_manual(
     bicicleta em corrida ou com avaria pendente.
     """
     bicicleta = obter_bicicleta(bicicleta_id)
-    novo_status = StatusBicicleta(novo_status)
-
-    if novo_status == StatusBicicleta.EM_USO:
-        raise HTTPException(
-            status_code=http.HTTP_400_BAD_REQUEST,
-            detail="Uma bicicleta só entra em uso por uma locação",
-        )
-    if novo_status == bicicleta.status:
-        return bicicleta
-
-    anterior = str(bicicleta.status)
-
-    if bicicleta.status == StatusBicicleta.EM_USO:
-        if novo_status == StatusBicicleta.DISPONIVEL:
-            raise HTTPException(
-                status_code=http.HTTP_409_CONFLICT,
-                detail="A bicicleta está em corrida e não pode ser liberada agora",
-            )
-        if not bicicleta.bloqueio_pendente:
-            bicicleta.bloqueio_pendente = True
-            auditoria_service.registrar(
-                usuario_email, "BICICLETA", bicicleta.id,
-                anterior, f"{StatusBicicleta.EM_MANUTENCAO} (agendado)",
-            )
-        return bicicleta
-
-    if novo_status == StatusBicicleta.DISPONIVEL and _tem_avaria_pendente(bicicleta.id):
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A bicicleta tem avaria pendente. Resolva a avaria antes de liberá-la",
-        )
-
-    bicicleta.status = novo_status
-    auditoria_service.registrar(
-        usuario_email, "BICICLETA", bicicleta.id, anterior, str(novo_status)
+    mudanca = bicicleta.alterar_status_manual(
+        StatusBicicleta(novo_status), lambda: _tem_avaria_pendente(bicicleta.id)
     )
+    if mudanca is not None:
+        anterior, novo = mudanca
+        auditoria_service.registrar(
+            usuario_email, "BICICLETA", bicicleta.id, anterior, novo
+        )
     return bicicleta
 
 
@@ -135,15 +107,11 @@ def finalizar_uso(bicicleta_id: int) -> BicicletaORM:
     """Chamada ao encerrar a corrida: a bicicleta volta a DISPONIVEL, ou vai
     para EM_MANUTENCAO se houver bloqueio agendado (que então é limpo)."""
     bicicleta = obter_bicicleta(bicicleta_id)
-    if bicicleta.bloqueio_pendente:
-        bicicleta.bloqueio_pendente = False
-        bicicleta.status = StatusBicicleta.EM_MANUTENCAO
+    if bicicleta.finalizar_uso():
         auditoria_service.registrar(
             "sistema", "BICICLETA", bicicleta.id,
             str(StatusBicicleta.EM_USO), str(StatusBicicleta.EM_MANUTENCAO),
         )
-    else:
-        bicicleta.status = StatusBicicleta.DISPONIVEL
     return bicicleta
 
 

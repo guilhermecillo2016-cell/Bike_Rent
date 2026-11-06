@@ -35,9 +35,8 @@ def reportar_avaria(usuario_email: str, bicicleta_id: int, descricao: str) -> Re
     bicicleta = bicicleta_service.obter_bicicleta(bicicleta_id)
     avaria = repo.create(descricao, usuario_email, bicicleta_id)
 
-    if bicicleta.status != StatusBicicleta.EM_MANUTENCAO:
-        anterior = str(bicicleta.status)
-        bicicleta.status = StatusBicicleta.EM_MANUTENCAO
+    anterior = bicicleta.enviar_para_manutencao()
+    if anterior is not None:
         auditoria_service.registrar(
             usuario_email, "BICICLETA", bicicleta.id,
             anterior, str(StatusBicicleta.EM_MANUTENCAO),
@@ -76,11 +75,9 @@ def resolver_avaria(avaria_id: int, operador_email: str) -> ReporteAvariaORM:
     avaria.resolver()
 
     bicicleta = bicicleta_service.obter_bicicleta(avaria.bicicleta_id)
-    if (
-        bicicleta.status == StatusBicicleta.EM_MANUTENCAO
-        and not bicicleta_service.tem_avaria_pendente(bicicleta.id)
+    if bicicleta.liberar_apos_reparo(
+        lambda: bicicleta_service.tem_avaria_pendente(bicicleta.id)
     ):
-        bicicleta.status = StatusBicicleta.DISPONIVEL
         auditoria_service.registrar(
             operador_email, "BICICLETA", bicicleta.id,
             str(StatusBicicleta.EM_MANUTENCAO), str(StatusBicicleta.DISPONIVEL),

@@ -12,9 +12,9 @@ então a referência a ele é `usuario_email`.
 
 import os
 from dataclasses import dataclass, field
-from typing import ClassVar, Literal, Optional
+from typing import Callable, ClassVar, Literal, Optional
 from datetime import datetime
-from dominio.erros import ConflitoDeRegra
+from dominio.erros import ConflitoDeRegra, RequisicaoInvalida
 from servicos_tecnicos.banco_de_dados.enums import (
     PapelUsuario,
     StatusAvaria,
@@ -136,8 +136,88 @@ class BicicletaORM:
     def _sair_da_estacao(self) -> None:
         self._estacao = None
 
+    # ------------------------------------------------------------------
+    # Status e transições. Quem decide se uma mudança é permitida é a
+    # própria bicicleta; os services só orquestram e registram a auditoria.
+    # ------------------------------------------------------------------
     def apta_para_locacao(self) -> bool:
         return self.status == StatusBicicleta.DISPONIVEL
+
+    def get_status(self) -> StatusBicicleta:
+        return self.status
+
+    def set_status(self, novo_status: StatusBicicleta) -> None:
+        """Troca direta, sem regra (fluxos internos). Valor inválido -> ValueError."""
+        self.status = StatusBicicleta(novo_status)
+
+    def iniciar_uso(self) -> None:
+        """Começa a corrida: a bicicleta passa a EM_USO."""
+        self.status = StatusBicicleta.EM_USO
+
+    def finalizar_uso(self) -> bool:
+        """Fim da corrida: volta a DISPONIVEL, ou vai para EM_MANUTENCAO se
+        havia bloqueio agendado (que então é limpo). Devolve True nesse
+        segundo caso, para o service registrar a auditoria."""
+        if self.bloqueio_pendente:
+            self.bloqueio_pendente = False
+            self.status = StatusBicicleta.EM_MANUTENCAO
+            return True
+        self.status = StatusBicicleta.DISPONIVEL
+        return False
+
+    def alterar_status_manual(
+        self, novo_status: StatusBicicleta, avaria_pendente: Callable[[], bool]
+    ) -> Optional[tuple[str, str]]:
+        """Troca manual feita por administrador/operador.
+
+        Bicicleta em corrida não muda na hora: o bloqueio fica agendado
+        (bloqueio_pendente). 400 se pedirem EM_USO; 409 se tentarem liberar
+        uma bicicleta em corrida ou com avaria pendente. Devolve
+        (status_anterior, status_novo) para a auditoria, ou None se nada mudou.
+        """
+        novo_status = StatusBicicleta(novo_status)
+
+        if novo_status == StatusBicicleta.EM_USO:
+            raise RequisicaoInvalida("Uma bicicleta só entra em uso por uma locação")
+        if novo_status == self.status:
+            return None
+
+        anterior = str(self.status)
+
+        if self.status == StatusBicicleta.EM_USO:
+            if novo_status == StatusBicicleta.DISPONIVEL:
+                raise ConflitoDeRegra(
+                    "A bicicleta está em corrida e não pode ser liberada agora"
+                )
+            if self.bloqueio_pendente:
+                return None
+            self.bloqueio_pendente = True
+            return anterior, f"{StatusBicicleta.EM_MANUTENCAO} (agendado)"
+
+        if novo_status == StatusBicicleta.DISPONIVEL and avaria_pendente():
+            raise ConflitoDeRegra(
+                "A bicicleta tem avaria pendente. Resolva a avaria antes de liberá-la"
+            )
+
+        self.status = novo_status
+        return anterior, str(novo_status)
+
+    def enviar_para_manutencao(self) -> Optional[str]:
+        """Reporte de avaria (RN-09): vai para EM_MANUTENCAO na hora. Devolve o
+        status anterior, ou None se já estava em manutenção."""
+        if self.status == StatusBicicleta.EM_MANUTENCAO:
+            return None
+        anterior = str(self.status)
+        self.status = StatusBicicleta.EM_MANUTENCAO
+        return anterior
+
+    def liberar_apos_reparo(self, avaria_pendente: Callable[[], bool]) -> bool:
+        """Avaria resolvida: só volta a DISPONIVEL se estiver EM_MANUTENCAO e
+        não houver outra avaria pendente (BLOQUEADA continua bloqueada)."""
+        if self.status == StatusBicicleta.EM_MANUTENCAO and not avaria_pendente():
+            self.status = StatusBicicleta.DISPONIVEL
+            return True
+        return False
 
 
 @dataclass

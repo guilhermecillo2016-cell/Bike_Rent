@@ -94,7 +94,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
     # Trava confirmada: agora sim a contagem começa (relógio do servidor).
     locacao = repo.create(usuario_email, bicicleta.id, bicicleta.estacao_id)
     estacao_service.remover_bicicleta(bicicleta.id)  # estacao_id = None
-    bicicleta_service.set_status(bicicleta.id, StatusBicicleta.EM_USO)
+    bicicleta.iniciar_uso()
     return locacao
 
 def obter_locacao_ativa(user_email: str) -> LocacaoORM:
