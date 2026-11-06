@@ -24,7 +24,7 @@ from dominio.comprovante import service as comprovante_service
 
 from servicos_tecnicos.banco_de_dados import repository_locacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao, StatusPagamento
-from servicos_tecnicos.banco_de_dados.models import LocacaoORM
+from dominio.locacao.locacao import Locacao
 from servicos_tecnicos.iot import ErroTrava, obter_trava
 
 
@@ -37,7 +37,7 @@ class EstacaoDestinoIndisponivel(Exception):
         self.sugestoes = sugestoes
 
 
-def to_public(locacao: LocacaoORM) -> LocacaoPublic:
+def to_public(locacao: Locacao) -> LocacaoPublic:
     return LocacaoPublic(
         id=locacao.id,
         bicicleta_id=locacao.bicicleta_id,
@@ -47,7 +47,7 @@ def to_public(locacao: LocacaoORM) -> LocacaoPublic:
     )
 
 
-def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
+def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
     """Inicia a corrida. Só cria a locação DEPOIS da trava confirmar.
 
     409 corrida já ativa / bicicleta sem estação ou estação inoperante;
@@ -97,7 +97,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
     bicicleta.iniciar_uso()
     return locacao
 
-def obter_locacao_ativa(user_email: str) -> LocacaoORM:
+def obter_locacao_ativa(user_email: str) -> Locacao:
     locacao = repo.get_ativa_by_usuario(user_email)
     if locacao is None:
         raise HTTPException(
@@ -106,7 +106,7 @@ def obter_locacao_ativa(user_email: str) -> LocacaoORM:
         )
     return locacao
 
-def calcular_andamento(locacao: LocacaoORM, agora: Optional[datetime] = None) -> LocacaoAndamento:
+def calcular_andamento(locacao: Locacao, agora: Optional[datetime] = None) -> LocacaoAndamento:
     agora = agora or datetime.now()
     segundos = locacao.segundos_decorridos(agora)
     minutos = locacao.minutos_decorridos(agora)

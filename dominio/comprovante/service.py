@@ -14,11 +14,11 @@ from servicos_tecnicos.banco_de_dados import (
     repository_locacao,
     repository_pagamento,
 )
-from servicos_tecnicos.banco_de_dados.models import LocacaoORM
+from dominio.locacao.locacao import Locacao
 from dominio.comprovante.comprovante_viagem import ComprovanteViagem
 
 
-def emitir(locacao: LocacaoORM, origem, destino, pagamento=None) -> ComprovanteViagem:
+def emitir(locacao: Locacao, origem, destino, pagamento=None) -> ComprovanteViagem:
     """Gera o comprovante ao encerrar. `pagamento` é None quando não houve
     cobrança (pacote cobriu tudo) ou quando ela não pôde ser feita."""
     return repo.create(
@@ -37,7 +37,7 @@ def _descrever_cartao(email: str, token) -> str:
     return "Cartão"
 
 
-def _metodo(locacao: LocacaoORM, pagamento) -> str:
+def _metodo(locacao: Locacao, pagamento) -> str:
     if (locacao.valor_total or 0) == 0:
         return "Pago com pacote de minutos"
     if pagamento is None:
@@ -46,7 +46,7 @@ def _metodo(locacao: LocacaoORM, pagamento) -> str:
     return f"Pacote de minutos + {cartao}" if locacao.minutos_pacote else cartao
 
 
-def to_public(c: ComprovanteViagem, locacao: LocacaoORM) -> ComprovantePublic:
+def to_public(c: ComprovanteViagem, locacao: Locacao) -> ComprovantePublic:
     pagamento = (
         repository_pagamento.get_by_id(c.pagamento_id) if c.pagamento_id else None
     )

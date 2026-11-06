@@ -2,7 +2,7 @@
 
 A tarifa não é uma entidade: é uma regra de cálculo da própria locação
 (comentário da professora, item 6). Por isso a regra mora na classe
-`LocacaoORM` (`minutos_iniciados`, `valor_por_minutos`,
+`Locacao` (`minutos_iniciados`, `valor_por_minutos`,
 `calcular_valor_trajeto`); este módulo só mantém os nomes antigos
 apontando para ela.
 
@@ -20,15 +20,15 @@ Configuração (variáveis de ambiente, com valores padrão provisórios):
     TARIFA_VALOR_POR_MINUTO  (padrão 0.50)
 """
 
-from servicos_tecnicos.banco_de_dados.models import LocacaoORM
+from dominio.locacao.locacao import Locacao
 
-VALOR_BASE: float = LocacaoORM.VALOR_BASE
-VALOR_POR_MINUTO: float = LocacaoORM.VALOR_POR_MINUTO
+VALOR_BASE: float = Locacao.VALOR_BASE
+VALOR_POR_MINUTO: float = Locacao.VALOR_POR_MINUTO
 
 
 def minutos_iniciados(duracao_segundos: int) -> int:
-    return LocacaoORM.minutos_iniciados(duracao_segundos)
+    return Locacao.minutos_iniciados(duracao_segundos)
 
 
 def calcular_valor(duracao_min: int) -> float:
-    return LocacaoORM.valor_por_minutos(duracao_min)
+    return Locacao.valor_por_minutos(duracao_min)
