@@ -7,11 +7,14 @@ from apresentacao.webclient import router
 from dominio.pacote import service as pacote_service
 from dominio.pacote.service import PacoteService
 from dominio.usuario import service as usuario_service
+from dominio.usuario.usuario import Usuario
+from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
 from tests.test_pacote_service import AGORA, EMAIL, FakePacoteRepo, FakePagamentoService
 
 
 def montar_client(monkeypatch, resultado=StatusPagamento.APROVADO):
+    memoria.usuarios[EMAIL] = Usuario("Ana", EMAIL)
     service = PacoteService(
         FakePagamentoService(resultado=resultado),
         pacote_repo=FakePacoteRepo(),

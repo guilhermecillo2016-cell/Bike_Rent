@@ -14,6 +14,7 @@ from fastapi import HTTPException, status
 
 from dominio.pacote.schemas import ItemCatalogo
 from dominio.pagamento.service import PagamentoService
+from dominio.usuario import service as usuario_service
 from servicos_tecnicos.banco_de_dados import repository_pacote
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
 
@@ -41,8 +42,9 @@ class PacoteService:
         item = self._obter_item(item_id)
         self.pagamento_service.exigir_cartao_credito(email)  # RN-06, antes de criar
 
+        usuario = usuario_service.obter_usuario(email)
         validade = self.relogio() + timedelta(days=item.validade_dias)
-        pacote = self.pacote_repo.create(email, item.minutos, validade)
+        pacote = self.pacote_repo.create(usuario, item.minutos, validade)
 
         pagamento = self.pagamento_service.cobrar_pacote(email, item.preco, pacote.id)
         if pagamento.status == StatusPagamento.APROVADO:

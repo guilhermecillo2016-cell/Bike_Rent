@@ -7,6 +7,7 @@ from dominio.locacao import service as locacao_service, tarifa
 from servicos_tecnicos.banco_de_dados import memoria, repository_locacao
 from servicos_tecnicos.banco_de_dados import repository_pacote
 from dominio.estacao import service as estacao_service
+from dominio.usuario.usuario import Usuario
 from dominio.estacao.schemas import EstacaoCreate
 
 EMAIL = "c@x.com"
@@ -16,7 +17,9 @@ EMAIL = "c@x.com"
 def _limpa():
     for d in (memoria.estacoes, memoria.bicicletas, memoria.locacoes, memoria.pacotes):
         d.clear()
+    memoria.usuarios[EMAIL] = Usuario("Fulano", EMAIL)
     yield
+    memoria.usuarios.pop(EMAIL, None)
 
 
 def _locacao_iniciada_ha(segundos):
@@ -29,7 +32,7 @@ def _locacao_iniciada_ha(segundos):
 
 
 def _pacote(minutos, ativo=True, validade_dias=7):
-    p = repository_pacote.create(EMAIL, minutos, datetime.now() + timedelta(days=validade_dias))
+    p = repository_pacote.create(memoria.usuarios[EMAIL], minutos, datetime.now() + timedelta(days=validade_dias))
     p.ativo = ativo
     return p
 

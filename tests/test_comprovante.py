@@ -11,6 +11,7 @@ from dominio.estacao.schemas import EstacaoCreate
 from dominio.locacao import service as locacao_service
 from dominio.pagamento import service as pagamento_service
 from dominio.pagamento.schemas import CartaoCreate
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.banco_de_dados import memoria, repository_pacote
 from servicos_tecnicos.iot import definir_trava
 from servicos_tecnicos.iot.mock import ModoTrava, TravaInteligenteMock
@@ -25,9 +26,11 @@ def _limpa():
     for d in (memoria.estacoes, memoria.bicicletas, memoria.locacoes, memoria.cartoes,
               memoria.pacotes, memoria.pagamentos, memoria.comprovantes):
         d.clear()
+    memoria.usuarios[EMAIL] = Usuario("Fulano", EMAIL)
     definir_trava(TravaInteligenteMock(ModoTrava.SUCESSO))
     yield
     definir_trava(None)
+    memoria.usuarios.pop(EMAIL, None)
 
 
 def _estacao(nome, lat=0.0):
@@ -47,7 +50,7 @@ def _encerrar(segundos=120, pacote_min=0):
     loc = locacao_service.iniciar_locacao(EMAIL, bike.qr_code)
     loc.data_hora_inicio = datetime.now() - timedelta(seconds=segundos)
     if pacote_min:
-        p = repository_pacote.create(EMAIL, pacote_min, datetime.now() + timedelta(days=7))
+        p = repository_pacote.create(memoria.usuarios[EMAIL], pacote_min, datetime.now() + timedelta(days=7))
         p.ativo = True
     r = locacao_service.encerrar_locacao(EMAIL, destino.id)
     return loc, r

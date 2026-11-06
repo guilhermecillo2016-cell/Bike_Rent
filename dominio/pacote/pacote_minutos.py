@@ -4,19 +4,47 @@ dominio/pacote/pacote_minutos.py
 Classe `PacoteMinutos` do diagrama: pacote de minutos comprado pelo usuário.
 """
 
-from dataclasses import dataclass
 from datetime import datetime
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from dominio.usuario.usuario import Usuario
 
 
-@dataclass
 class PacoteMinutos:
-    id: int
-    usuario_email: str
-    minutos_totais: int
-    minutos_restantes: int
-    data_validade: datetime
-    # False até o pagamento da compra ser aprovado
-    ativo: bool = False
+    """Construtor do diagrama: PacoteMinutos(minutos, validade). O dono
+    (`usuario`) e o id (`id_pacote`, dado pelo repositório) entram como
+    parâmetros opcionais."""
+
+    def __init__(
+        self,
+        minutos: int,
+        validade: datetime,
+        *,
+        usuario: Optional["Usuario"] = None,
+        id_pacote: Optional[int] = None,
+    ):
+        self.id_pacote = id_pacote
+        self.usuario = usuario
+        self.minutos_totais = minutos
+        self.minutos_restantes = minutos
+        self.data_validade = validade
+        # False até o pagamento da compra ser aprovado
+        self.ativo = False
+
+    def __repr__(self) -> str:
+        return (
+            f"PacoteMinutos(id_pacote={self.id_pacote!r}, usuario_email={self.usuario_email!r}, "
+            f"minutos_restantes={self.minutos_restantes!r}/{self.minutos_totais!r}, ativo={self.ativo!r})"
+        )
+
+    @property
+    def id(self) -> Optional[int]:
+        return self.id_pacote
+
+    @property
+    def usuario_email(self) -> Optional[str]:
+        return self.usuario.email if self.usuario is not None else None
 
     def ativar(self) -> None:
         """Compra aprovada: o pacote passa a valer com todos os minutos (RF-10)."""

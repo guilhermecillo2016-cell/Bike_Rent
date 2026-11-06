@@ -18,6 +18,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from servicos_tecnicos.banco_de_dados import repository_usuario as repo
+from dominio.erros import RecursoNaoEncontrado
 from dominio.usuario.usuario import Usuario
 UsuarioORM = Usuario  # alias de compatibilidade (tests/test_rbac.py usa service.UsuarioORM)
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
@@ -147,6 +148,14 @@ def register_operador(dados: OperadorCreate) -> Usuario:
 # ------------------------------------------------------------------
 # Autenticação
 # ------------------------------------------------------------------
+def obter_usuario(email: str) -> Usuario:
+    """Usuário cadastrado com esse e-mail; 404 se não existe."""
+    usuario = repo.get_by_email(email)
+    if usuario is None:
+        raise RecursoNaoEncontrado("Usuário não encontrado")
+    return usuario
+
+
 def authenticate_user(email: str, senha: str) -> Optional[Usuario]:
     usuario = repo.get_by_email(email)
     if not usuario or not usuario.autenticar(senha):

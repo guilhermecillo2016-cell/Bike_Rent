@@ -11,21 +11,19 @@ from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from dominio.pacote.pacote_minutos import PacoteMinutos
+from dominio.usuario.usuario import Usuario
 
 
 def create(
-    usuario_email: str,
+    usuario: Usuario,
     minutos_totais: int,
     data_validade: datetime,
 ) -> PacoteMinutos:
     pacote = PacoteMinutos(
-        id=memoria.proximo_id("pacotes"),
-        usuario_email=usuario_email,
-        minutos_totais=minutos_totais,
-        minutos_restantes=minutos_totais,
-        data_validade=data_validade,
+        minutos_totais, data_validade,
+        usuario=usuario, id_pacote=memoria.proximo_id("pacotes"),
     )
-    memoria.pacotes[pacote.id] = pacote
+    memoria.pacotes[pacote.id_pacote] = pacote
     return pacote
 
 

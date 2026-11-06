@@ -6,7 +6,9 @@ from fastapi import HTTPException, status
 
 from dominio.pacote.service import CATALOGO_PACOTES, PacoteService
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
-from servicos_tecnicos.banco_de_dados.models import PacoteMinutosORM
+from dominio.pacote.pacote_minutos import PacoteMinutos
+from dominio.usuario.usuario import Usuario
+from servicos_tecnicos.banco_de_dados import memoria
 
 AGORA = datetime(2026, 10, 12, 12, 0)
 EMAIL = "ana@exemplo.com"
@@ -17,15 +19,12 @@ class FakePacoteRepo:
     def __init__(self):
         self.itens = {}
 
-    def create(self, email_usuario, minutos_totais, data_validade):
-        pacote = PacoteMinutosORM(
-            id=len(self.itens) + 1,
-            usuario_email=email_usuario,
-            minutos_totais=minutos_totais,
-            minutos_restantes=0,
-            data_validade=data_validade,
-            ativo=False,
+    def create(self, usuario, minutos_totais, data_validade):
+        pacote = PacoteMinutos(
+            minutos_totais, data_validade,
+            usuario=usuario, id_pacote=len(self.itens) + 1,
         )
+        pacote.minutos_restantes = 0
         self.itens[pacote.id] = pacote
         return pacote
 
@@ -51,6 +50,13 @@ class FakePagamentoService:
         return SimpleNamespace(status=self.resultado)
 
 
+@pytest.fixture(autouse=True)
+def _usuario_cadastrado():
+    memoria.usuarios[EMAIL] = Usuario("Ana", EMAIL)
+    yield
+    memoria.usuarios.pop(EMAIL, None)
+
+
 @pytest.fixture
 def repo():
     return FakePacoteRepo()
@@ -67,7 +73,7 @@ def service(repo, pagamentos):
 
 
 def novo_pacote(repo, restantes, dias, email=EMAIL, ativo=True):
-    p = repo.create(email, restantes, AGORA + timedelta(days=dias))
+    p = repo.create(Usuario("Teste", email), restantes, AGORA + timedelta(days=dias))
     p.minutos_restantes = restantes
     p.ativo = ativo
     return p
