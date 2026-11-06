@@ -110,6 +110,44 @@ class PagamentoService:
         pagamento.status = self.gateway.cobrar(cartao.token, valor)
         return pagamento
  
+    # --- Cartões (RF-11, RN-06) ---------------------------------------
+    def vincular_cartao(self, email_usuario: str, dados: CartaoCreate) -> CartaoORM:
+        """"if not _numero_valido_luhn(dados.numero_cartao):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Número de cartão inválido",
+            )"""
+        if not _validade_no_futuro(dados.validade):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cartão vencido ou validade inválida (use o formato MM/AA)",
+            )
+
+        resultado = tokenizador.tokenizar(dados.numero_cartao)
+
+        cartao = CartaoORM(
+            token=resultado["token"],
+            ultimos_digitos=resultado["ultimos_digitos"],
+            bandeira=resultado["bandeira"],
+            nome_titular=dados.nome_titular,
+            validade=dados.validade,
+            tipo=_normalizar_tipo(dados.tipo),
+            apelido=dados.apelido
+        )
+        return self.cartao_repo.add_cartao(email_usuario, cartao)
+
+    def listar_cartoes(self, email_usuario: str) -> list[CartaoORM]:
+        return self.cartao_repo.list_cartoes(email_usuario)
+
+    def remover_cartao(self, email_usuario: str, token: str) -> bool:
+        """Falso se não achou o cartão ou se ele não é do usuário; senão
+        remove e devolve verdadeiro."""
+        cartao = self.cartao_repo.get_cartao(email_usuario, token)
+        if not cartao:
+            return False
+        self.cartao_repo.remover_cartao(email_usuario, cartao)
+        return True
+
     # --- Validações ---------------------------------------------------
     @staticmethod
     def _validar_destino(locacao_id, pacote_id):
@@ -177,40 +215,21 @@ def _validade_no_futuro(validade: str) -> bool:
         return False
 
 
+
+
+# ----------------------------------------------------------------------
+# Fachada de módulo (mesmas assinaturas de sempre): quem faz o trabalho é
+# a classe PagamentoService.
+# ----------------------------------------------------------------------
 def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> CartaoORM:
-    """"if not _numero_valido_luhn(dados.numero_cartao):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Número de cartão inválido",
-        )"""
-    if not _validade_no_futuro(dados.validade):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cartão vencido ou validade inválida (use o formato MM/AA)",
-        )
-
-    resultado = tokenizador.tokenizar(dados.numero_cartao)
-
-    cartao = CartaoORM(
-        token=resultado["token"],
-        ultimos_digitos=resultado["ultimos_digitos"],
-        bandeira=resultado["bandeira"],
-        nome_titular=dados.nome_titular,
-        validade=dados.validade,
-        tipo=_normalizar_tipo(dados.tipo),
-        apelido=dados.apelido
-        
-    )
-    return repo.add_cartao(email_usuario, cartao)
+    return PagamentoService().vincular_cartao(email_usuario, dados)
 
 
 def listar_cartoes(email_usuario: str) -> list[CartaoORM]:
-    return repo.list_cartoes(email_usuario)
-#Retorna falso se não encontrou o cartão ou se não pertence ao usuário, caso contrário remove e retorna verdadeiro
-def remover_cartao(email_usuario: str, token: str) -> bool:
-    cartao = repo.get_cartao(email_usuario, token)
-    if not cartao:
-        return False
-    repo.remover_cartao(email_usuario, cartao)
-    return True
+    return PagamentoService().listar_cartoes(email_usuario)
 
+
+# Retorna falso se não encontrou o cartão ou se não pertence ao usuário,
+# caso contrário remove e retorna verdadeiro
+def remover_cartao(email_usuario: str, token: str) -> bool:
+    return PagamentoService().remover_cartao(email_usuario, token)
