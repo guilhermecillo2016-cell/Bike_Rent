@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 
 from servicos_tecnicos.pagamentos import tokenizador
 from servicos_tecnicos.banco_de_dados import repository_cartao as repo
-from servicos_tecnicos.banco_de_dados import repository_pagamento
+from servicos_tecnicos.banco_de_dados import repository_locacao, repository_pacote, repository_pagamento
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
 from dominio.pagamento.cartao import Cartao
 from dominio.pagamento.pagamento import Pagamento
@@ -47,11 +47,13 @@ class PagamentoService:
     """
  
     def __init__(
-        self, pagamento_repo=None, cartao_repo=None, locacao_repo=None, gateway=None
+        self, pagamento_repo=None, cartao_repo=None, locacao_repo=None,
+        pacote_repo=None, gateway=None,
     ):
         self.pagamento_repo = pagamento_repo or repository_pagamento
         self.cartao_repo = cartao_repo or repo
-        self.locacao_repo = locacao_repo  # opcional: sem ele, não checa a locação
+        self.locacao_repo = locacao_repo or repository_locacao
+        self.pacote_repo = pacote_repo or repository_pacote
         self.gateway = gateway or GatewayPagamento()
  
     # --- Consultas ----------------------------------------------------
@@ -74,13 +76,13 @@ class PagamentoService:
         Recusa NÃO lança exceção: devolve o Pagamento com status RECUSADO
         para a locação decidir o que fazer.
         """
-        self._validar_locacao(locacao_id)
-        return self._cobrar(email, valor, locacao_id=locacao_id)
+        locacao = self._obter_locacao(locacao_id)
+        return self._cobrar(email, valor, locacao=locacao)
  
     def cobrar_pacote(self, email, valor, pacote_id):
         """Cobra a compra de um pacote de minutos (mesmo gateway da corrida)."""
-        self._validar_pacote(pacote_id)
-        return self._cobrar(email, valor, pacote_id=pacote_id)
+        pacote = self._obter_pacote(pacote_id)
+        return self._cobrar(email, valor, pacote=pacote)
  
     def exigir_cartao_credito(self, email):
         """RN-06: o usuário precisa ter cartão de crédito cadastrado.
@@ -95,16 +97,16 @@ class PagamentoService:
             )
         return cartao
  
-    def _cobrar(self, email, valor, locacao_id=None, pacote_id=None):
-        self._validar_destino(locacao_id, pacote_id)
+    def _cobrar(self, email, valor, locacao=None, pacote=None):
+        self._validar_destino(locacao, pacote)
         self._validar_valor(valor)
         cartao = self.exigir_cartao_credito(email)
         # O pagamento nasce PENDENTE; o status final vem do gateway.
         pagamento = self.pagamento_repo.create(
             valor=valor,
             tipo=TipoPagamento.CARTAO_CREDITO,
-            locacao_id=locacao_id,
-            pacote_id=pacote_id,
+            locacao=locacao,
+            pacote=pacote,
             token_cartao=cartao.token,
         )
         pagamento.status = self.gateway.cobrar(cartao.token, valor)
@@ -150,9 +152,9 @@ class PagamentoService:
 
     # --- Validações ---------------------------------------------------
     @staticmethod
-    def _validar_destino(locacao_id, pacote_id):
-        """XOR: exatamente um entre locacao_id e pacote_id."""
-        if (locacao_id is None) == (pacote_id is None):
+    def _validar_destino(locacao, pacote):
+        """XOR: exatamente um entre locação e pacote (ids ou objetos)."""
+        if (locacao is None) == (pacote is None):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Informe exatamente um entre locacao_id e pacote_id",
@@ -173,20 +175,30 @@ class PagamentoService:
                 detail="O valor deve ser maior que zero",
             )
  
-    def _validar_locacao(self, locacao_id):
-        if locacao_id is None or self.locacao_repo is None:
-            return
-        if self.locacao_repo.get_by_id(locacao_id) is None:
+    def _obter_locacao(self, locacao_id):
+        """A locação paga (404 se não existe). None se não veio id."""
+        if locacao_id is None:
+            return None
+        locacao = self.locacao_repo.get_by_id(locacao_id)
+        if locacao is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Locação não encontrada",
             )
- 
-    def _validar_pacote(self, pacote_id):
-        # TODO [C8]: checar existência do pacote (404 "Pacote não encontrado")
-        # quando o repository de pacote de minutos existir (iteração 2).
-        # Por ora, só vale o XOR.
-        return
+        return locacao
+
+    def _obter_pacote(self, pacote_id):
+        """O pacote pago (404 se não existe). None se não veio id."""
+        if pacote_id is None:
+            return None
+        pacote = self.pacote_repo.get_by_id(pacote_id)
+        if pacote is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Pacote não encontrado",
+            )
+        return pacote
+
 
 def _numero_valido_luhn(numero_cartao: str) -> bool:
     """Algoritmo de Luhn: validação padrão de números de cartão."""

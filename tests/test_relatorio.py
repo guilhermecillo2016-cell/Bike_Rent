@@ -28,6 +28,7 @@ from datetime import date, datetime
 from fastapi import HTTPException
 
 from apresentacao import adminweb
+from dominio.pacote.pacote_minutos import PacoteMinutos
 from dominio.usuario.usuario import Usuario
 from dominio.relatorio import service
 from servicos_tecnicos.banco_de_dados import memoria
@@ -56,7 +57,7 @@ def _montar():
         l.data_hora_inicio = quando
         l.valor_total = valor
         l.em_andamento = False
-        p = repository_pagamento.create(valor, TipoPagamento.CARTAO_CREDITO, locacao_id=l.id)
+        p = repository_pagamento.create(valor, TipoPagamento.CARTAO_CREDITO, locacao=l)
         p.status = status
         p.data_hora = pago_em
 
@@ -69,7 +70,8 @@ def _montar():
     locacao(4, B, datetime(2026, 10, 3, 9, 0), 3.0, aprovado, datetime(2026, 10, 3, 9, 20))
     locacao(3, A, datetime(2026, 9, 15, 12, 0), 8.0, aprovado, datetime(2026, 9, 15, 12, 30))
 
-    pacote = repository_pagamento.create(30.0, TipoPagamento.CARTAO_CREDITO, pacote_id=1)
+    pacote_comprado = PacoteMinutos(30, datetime(2026, 11, 1), usuario=cid, id_pacote=1)
+    pacote = repository_pagamento.create(30.0, TipoPagamento.CARTAO_CREDITO, pacote=pacote_comprado)
     pacote.status = aprovado
     pacote.data_hora = datetime(2026, 10, 2, 10, 0)
 

@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 
 from dominio.pagamento.service import PagamentoService  # ajuste ao caminho real do service
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento, TipoPagamento
-from servicos_tecnicos.banco_de_dados.models import PagamentoORM
+from dominio.pagamento.pagamento import Pagamento
 from servicos_tecnicos.pagamentos.gateway import TOKEN_CARTAO_RECUSADO
 
 EMAIL = "ana@exemplo.com"
@@ -17,15 +17,11 @@ class FakePagamentoRepo:
     def __init__(self):
         self.itens = {}
 
-    def create(self, valor, tipo, locacao_id=None, pacote_id=None, token_cartao=None):
-        pagamento = PagamentoORM(
-            id=len(self.itens) + 1,
-            valor=valor,
-            tipo=tipo,
-            data_hora=datetime.now(),
-            locacao_id=locacao_id,
-            pacote_id=pacote_id,
-            token_cartao=token_cartao,
+    def create(self, valor, tipo, locacao=None, pacote=None, token_cartao=None):
+        pagamento = Pagamento(
+            valor, tipo,
+            locacao=locacao, pacote=pacote, token_cartao=token_cartao,
+            id_pagamento=len(self.itens) + 1,
         )
         self.itens[pagamento.id] = pagamento
         return pagamento
@@ -50,7 +46,15 @@ class FakeLocacaoRepo:
         self.ids = set(ids)
 
     def get_by_id(self, locacao_id):
-        return object() if locacao_id in self.ids else None
+        return SimpleNamespace(id_locacao=locacao_id) if locacao_id in self.ids else None
+
+
+class FakePacoteRepo:
+    def __init__(self, ids):
+        self.ids = set(ids)
+
+    def get_by_id(self, pacote_id):
+        return SimpleNamespace(id_pacote=pacote_id) if pacote_id in self.ids else None
 
 
 class GatewaySpy:
@@ -77,6 +81,7 @@ def service(pagamentos):
         pagamento_repo=pagamentos,
         cartao_repo=FakeCartaoRepo({EMAIL: cartao()}),
         locacao_repo=FakeLocacaoRepo({10}),
+        pacote_repo=FakePacoteRepo({7}),
     )
 
 
@@ -101,6 +106,7 @@ def test_cobrar_corrida_recusada_nao_lanca_excecao(pagamentos):
     service = PagamentoService(
         pagamento_repo=pagamentos,
         cartao_repo=FakeCartaoRepo({EMAIL: cartao(TOKEN_CARTAO_RECUSADO)}),
+        locacao_repo=FakeLocacaoRepo({10}),
     )
 
     p = service.cobrar_corrida(EMAIL, 18.0, locacao_id=10)
@@ -129,6 +135,7 @@ def test_cobrar_pacote_recusado(pagamentos):
     service = PagamentoService(
         pagamento_repo=pagamentos,
         cartao_repo=FakeCartaoRepo({EMAIL: cartao(TOKEN_CARTAO_RECUSADO)}),
+        pacote_repo=FakePacoteRepo({7}),
     )
 
     p = service.cobrar_pacote(EMAIL, 50.0, pacote_id=7)
@@ -139,7 +146,8 @@ def test_cobrar_pacote_recusado(pagamentos):
 # --- RN-06: cartão de crédito obrigatório -----------------------------
 def test_sem_cartao_de_credito_levanta_400(pagamentos):
     service = PagamentoService(
-        pagamento_repo=pagamentos, cartao_repo=FakeCartaoRepo({})
+        pagamento_repo=pagamentos, cartao_repo=FakeCartaoRepo({}),
+        locacao_repo=FakeLocacaoRepo({10}),
     )
 
     with pytest.raises(HTTPException) as exc:
@@ -187,6 +195,7 @@ def test_usa_o_gateway_injetado(pagamentos):
     service = PagamentoService(
         pagamento_repo=pagamentos,
         cartao_repo=FakeCartaoRepo({EMAIL: cartao("tok_xyz")}),
+        locacao_repo=FakeLocacaoRepo({10}),
         gateway=spy,
     )
 
