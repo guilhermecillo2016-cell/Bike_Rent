@@ -40,7 +40,7 @@ avarias: dict[int, "object"] = {}
 # id do comprovante -> ComprovanteORM
 comprovantes: dict[int, "object"] = {}
 
-# id do evento -> EventoAuditoriaORM
+# id do evento -> EventoAuditoria
 eventos_auditoria: dict[int, "object"] = {}
 
 # Contador de ids inteiros por coleção (1, 2, 3, ...), no lugar da

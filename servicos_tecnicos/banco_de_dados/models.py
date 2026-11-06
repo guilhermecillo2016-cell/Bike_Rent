@@ -32,6 +32,8 @@ from servicos_tecnicos.banco_de_dados.enums import (
 # ===== compatibilidade: classes que já saíram deste arquivo =====
 from dominio.pagamento.cartao import Cartao
 CartaoORM = Cartao
+from dominio.auditoria.evento_auditoria import EventoAuditoria
+EventoAuditoriaORM = EventoAuditoria
 # ===== fim da compatibilidade =====
 
 
@@ -373,20 +375,6 @@ class ComprovanteORM:
     locacao_id: int
     # None quando o pacote cobriu a corrida inteira (não houve cobrança)
     pagamento_id: Optional[int] = None
-
-
-@dataclass
-class EventoAuditoriaORM:
-    """Histórico de alterações manuais de status (UC2, pós-condição 3).
-    Não consta no diagrama de classes; ver issue [C7]."""
-
-    id: int
-    data_hora: datetime
-    usuario_email: str
-    tipo_entidade: Literal["BICICLETA", "ESTACAO"]
-    entidade_id: int
-    status_anterior: str
-    status_novo: str
 
 
 @dataclass
