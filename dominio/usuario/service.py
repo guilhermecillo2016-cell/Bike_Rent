@@ -16,11 +16,11 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from servicos_tecnicos.banco_de_dados import repository_usuario as repo
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
+from servicos_tecnicos.seguranca import conferir_senha, gerar_hash, pwd_context  # noqa: F401
 from dominio.usuario.schemas import (
     AdminCreate,
     OperadorCreate,
@@ -36,7 +36,6 @@ SECRET_KEY = os.getenv("SECRET_KEY", "troque-esta-chave-por-uma-bem-secreta")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/webclient/login")
 oauth2_scheme_admin = OAuth2PasswordBearer(tokenUrl="/adminweb/login")
 
@@ -81,11 +80,11 @@ def to_public(usuario: UsuarioORM) -> UsuarioPublic:
 # Senha
 # ------------------------------------------------------------------
 def get_password_hash(senha: str) -> str:
-    return pwd_context.hash(senha)
+    return gerar_hash(senha)
 
 
 def verify_password(senha_texto: str, senha_hash: str) -> bool:
-    return pwd_context.verify(senha_texto, senha_hash)
+    return conferir_senha(senha_texto, senha_hash)
 
 
 # ------------------------------------------------------------------
@@ -155,7 +154,7 @@ def register_operador(dados: OperadorCreate) -> UsuarioORM:
 # ------------------------------------------------------------------
 def authenticate_user(email: str, senha: str) -> Optional[UsuarioORM]:
     usuario = repo.get_by_email(email)
-    if not usuario or not verify_password(senha, usuario.senha_hash):
+    if not usuario or not usuario.autenticar(senha):
         return None
     return usuario
 
