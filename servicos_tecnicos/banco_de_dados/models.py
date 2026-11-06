@@ -34,6 +34,8 @@ from dominio.pagamento.cartao import Cartao
 CartaoORM = Cartao
 from dominio.auditoria.evento_auditoria import EventoAuditoria
 EventoAuditoriaORM = EventoAuditoria
+from dominio.avaria.reporte_avaria import ReporteAvaria
+ReporteAvariaORM = ReporteAvaria
 # ===== fim da compatibilidade =====
 
 
@@ -350,20 +352,6 @@ class PagamentoORM:
     pacote_id: Optional[int] = None
     token_cartao: Optional[str] = None
     qr_code_pix: Optional[str] = None
-
-
-@dataclass
-class ReporteAvariaORM:
-    id: int
-    descricao: str
-    data_hora: datetime
-    usuario_email: str
-    bicicleta_id: int
-    status: StatusAvaria = StatusAvaria.PENDENTE
-
-    def resolver(self) -> None:
-        self.status = StatusAvaria.RESOLVIDO
-
 
 
 @dataclass

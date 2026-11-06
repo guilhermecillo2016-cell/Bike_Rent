@@ -13,17 +13,17 @@ from dominio.avaria.schemas import AvariaPublic
 from dominio.bicicleta import service as bicicleta_service
 from servicos_tecnicos.banco_de_dados import repository_avaria as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusAvaria, StatusBicicleta
-from servicos_tecnicos.banco_de_dados.models import ReporteAvariaORM
+from dominio.avaria.reporte_avaria import ReporteAvaria
 
 
-def to_public(a: ReporteAvariaORM) -> AvariaPublic:
+def to_public(a: ReporteAvaria) -> AvariaPublic:
     return AvariaPublic(
         id=a.id, descricao=a.descricao, data_hora=a.data_hora,
         usuario_email=a.usuario_email, bicicleta_id=a.bicicleta_id, status=a.status,
     )
 
 
-def reportar_avaria(usuario_email: str, bicicleta_id: int, descricao: str) -> ReporteAvariaORM:
+def reportar_avaria(usuario_email: str, bicicleta_id: int, descricao: str) -> ReporteAvaria:
     """Grava o reporte e põe a bicicleta em EM_MANUTENCAO na hora (RN-09).
     Como só DISPONIVEL é apta, ela some da estação e o QR passa a dar 409."""
     descricao = (descricao or "").strip()
@@ -44,7 +44,7 @@ def reportar_avaria(usuario_email: str, bicicleta_id: int, descricao: str) -> Re
     return avaria
 
 
-def obter_avaria(avaria_id: int) -> ReporteAvariaORM:
+def obter_avaria(avaria_id: int) -> ReporteAvaria:
     avaria = repo.get_by_id(avaria_id)
     if avaria is None:
         raise HTTPException(
@@ -54,14 +54,14 @@ def obter_avaria(avaria_id: int) -> ReporteAvariaORM:
     return avaria
 
 
-def listar_avarias(status: Optional[StatusAvaria] = None) -> list[ReporteAvariaORM]:
+def listar_avarias(status: Optional[StatusAvaria] = None) -> list[ReporteAvaria]:
     avarias = repo.list_all()
     if status is not None:
         avarias = [a for a in avarias if a.status == status]
     return sorted(avarias, key=lambda a: a.id, reverse=True)
 
 
-def resolver_avaria(avaria_id: int, operador_email: str) -> ReporteAvariaORM:
+def resolver_avaria(avaria_id: int, operador_email: str) -> ReporteAvaria:
     """Marca como RESOLVIDO. A bicicleta só volta a DISPONIVEL se estiver
     EM_MANUTENCAO e não houver outra avaria PENDENTE/EM_REPARO; se estiver
     BLOQUEADA (por outro motivo), continua bloqueada.

@@ -34,7 +34,7 @@ locacoes: dict[int, "object"] = {}
 # id do pagamento -> PagamentoORM
 pagamentos: dict[int, "object"] = {}
 
-# id do reporte -> ReporteAvariaORM
+# id do reporte -> ReporteAvaria
 avarias: dict[int, "object"] = {}
 
 # id do comprovante -> ComprovanteORM

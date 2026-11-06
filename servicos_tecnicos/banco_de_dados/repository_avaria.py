@@ -10,15 +10,15 @@ from datetime import datetime
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import ReporteAvariaORM
+from dominio.avaria.reporte_avaria import ReporteAvaria
 
 
 def create(
         descricao: str,
         usuario_email: str,
         bicicleta_id: int,
-        ) -> ReporteAvariaORM:
-    avaria = ReporteAvariaORM(
+        ) -> ReporteAvaria:
+    avaria = ReporteAvaria(
         id=memoria.proximo_id("avarias"),
         descricao=descricao,
         data_hora=datetime.now(),
@@ -29,13 +29,13 @@ def create(
     return avaria
 
 
-def get_by_id(avaria_id: int) -> Optional[ReporteAvariaORM]:
+def get_by_id(avaria_id: int) -> Optional[ReporteAvaria]:
     return memoria.avarias.get(avaria_id)
 
 
-def list_all() -> list[ReporteAvariaORM]:
+def list_all() -> list[ReporteAvaria]:
     return list(memoria.avarias.values())
 
 
-def list_by_bicicleta(bicicleta_id: int) -> list[ReporteAvariaORM]:
+def list_by_bicicleta(bicicleta_id: int) -> list[ReporteAvaria]:
     return [a for a in memoria.avarias.values() if a.bicicleta_id == bicicleta_id]
