@@ -13,7 +13,7 @@ repository_*.py que o usam) precisam mudar.
 import itertools
 from collections import defaultdict
 
-# username/email -> UsuarioORM
+# username/email -> Usuario
 usuarios: dict[str, "object"] = {}
 
 # id da estação -> EstacaoORM

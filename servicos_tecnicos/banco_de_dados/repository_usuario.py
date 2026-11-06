@@ -9,15 +9,15 @@ arquivo muda.
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 
 
-def get_by_email(email: str) -> Optional[UsuarioORM]:
+def get_by_email(email: str) -> Optional[Usuario]:
     return memoria.usuarios.get(email)
 
 
-def get_by_cpf(cpf: str) -> Optional[UsuarioORM]:
+def get_by_cpf(cpf: str) -> Optional[Usuario]:
     """Usuário dono do CPF (só números). Quem não tem CPF nunca casa."""
     if not cpf:
         return None
@@ -32,8 +32,8 @@ def create(
     cpf: Optional[str] = None,
     telefone: Optional[str] = None,
     endereco: Optional[str] = None,
-) -> UsuarioORM:
-    usuario = UsuarioORM(
+) -> Usuario:
+    usuario = Usuario(
         nome=nome,
         email=email,
         senha_hash=senha_hash,

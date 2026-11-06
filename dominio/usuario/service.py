@@ -18,7 +18,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
 from servicos_tecnicos.banco_de_dados import repository_usuario as repo
-from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+from dominio.usuario.usuario import Usuario
+UsuarioORM = Usuario  # alias de compatibilidade (tests/test_rbac.py usa service.UsuarioORM)
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 from servicos_tecnicos.seguranca import conferir_senha, gerar_hash, pwd_context  # noqa: F401
 from dominio.usuario.schemas import (
@@ -65,7 +66,7 @@ def mask_cpf(cpf: Optional[str]) -> Optional[str]:
     return f"***.***.***-{digitos[9:]}"
 
 
-def to_public(usuario: UsuarioORM) -> UsuarioPublic:
+def to_public(usuario: Usuario) -> UsuarioPublic:
     return UsuarioPublic(
         nome=usuario.nome,
         email=usuario.email,
@@ -90,7 +91,7 @@ def verify_password(senha_texto: str, senha_hash: str) -> bool:
 # ------------------------------------------------------------------
 # Cadastro (História 1) — ciclista
 # ------------------------------------------------------------------
-def register_user(dados: UsuarioCreate) -> UsuarioORM:
+def register_user(dados: UsuarioCreate) -> Usuario:
     if repo.get_by_email(dados.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -126,7 +127,7 @@ def register_user(dados: UsuarioCreate) -> UsuarioORM:
 # separadas do ciclista: sem CPF, telefone ou endereço, só nome,
 # e-mail e senha (ver AdminCreate/OperadorCreate).
 # ------------------------------------------------------------------
-def _cadastrar_equipe(dados: AdminCreate, papel: PapelUsuario) -> UsuarioORM:
+def _cadastrar_equipe(dados: AdminCreate, papel: PapelUsuario) -> Usuario:
     if repo.get_by_email(dados.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -141,18 +142,18 @@ def _cadastrar_equipe(dados: AdminCreate, papel: PapelUsuario) -> UsuarioORM:
     )
 
 
-def register_admin(dados: AdminCreate) -> UsuarioORM:
+def register_admin(dados: AdminCreate) -> Usuario:
     return _cadastrar_equipe(dados, PapelUsuario.ADMINISTRADOR)
 
 
-def register_operador(dados: OperadorCreate) -> UsuarioORM:
+def register_operador(dados: OperadorCreate) -> Usuario:
     return _cadastrar_equipe(dados, PapelUsuario.OPERADOR_CAMPO)
 
 
 # ------------------------------------------------------------------
 # Autenticação
 # ------------------------------------------------------------------
-def authenticate_user(email: str, senha: str) -> Optional[UsuarioORM]:
+def authenticate_user(email: str, senha: str) -> Optional[Usuario]:
     usuario = repo.get_by_email(email)
     if not usuario or not usuario.autenticar(senha):
         return None
@@ -168,7 +169,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def _usuario_do_token(token: str) -> UsuarioORM:
+def _usuario_do_token(token: str) -> Usuario:
     """Valida o JWT e devolve o usuário dono dele. Token inválido, expirado,
     sem 'sub' ou de usuário que não existe mais: sempre 401."""
     credentials_exception = HTTPException(
@@ -191,7 +192,7 @@ def _usuario_do_token(token: str) -> UsuarioORM:
     return usuario
 
 
-def get_current_user(token: str = Depends(oauth2_scheme)) -> UsuarioORM:
+def get_current_user(token: str = Depends(oauth2_scheme)) -> Usuario:
     return _usuario_do_token(token)
 
 
@@ -217,7 +218,7 @@ def requer_papel(*papeis: PapelUsuario):
     permitidos = tuple(PapelUsuario(p) for p in papeis)
     detalhe = "Acesso restrito a " + " e ".join(_ROTULO_PAPEL[p] for p in permitidos)
 
-    def dependency(token: str = Depends(oauth2_scheme_admin)) -> UsuarioORM:
+    def dependency(token: str = Depends(oauth2_scheme_admin)) -> Usuario:
         usuario = _usuario_do_token(token)
         if usuario.papel not in permitidos:
             raise HTTPException(

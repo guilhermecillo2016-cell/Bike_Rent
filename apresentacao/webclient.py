@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from apresentacao.exceptions import _resposta_indisponivel, _resposta_estacao_indisponivel
 
 from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
-from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+from dominio.usuario.usuario import Usuario
 
 from dominio.bicicleta.schemas import BicicletaPublic, QrValidarRequest
 from dominio.bicicleta import service as bicicleta_service
@@ -86,7 +86,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
 
 
 @router.get("/me", response_model=UsuarioPublic)
-def read_current_user(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
+def read_current_user(usuario: Usuario = Depends(usuario_service.get_current_user)):
     return usuario_service.to_public(usuario)
 
 
@@ -96,20 +96,20 @@ def read_current_user(usuario: UsuarioORM = Depends(usuario_service.get_current_
 @router.post("/pagamentos", response_model=CartaoPublic, status_code=status.HTTP_201_CREATED)
 def vincular_cartao(
     dados: CartaoCreate,
-    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+    usuario: Usuario = Depends(usuario_service.get_current_user),
 ):
     cartao = pagamento_service.vincular_cartao(usuario.email, dados)
     return cartao
 
 
 @router.get("/pagamentos", response_model=list[CartaoPublic])
-def meus_cartoes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
+def meus_cartoes(usuario: Usuario = Depends(usuario_service.get_current_user)):
     return pagamento_service.listar_cartoes(usuario.email)
 
 @router.delete("/pagamentos/{token}", status_code=status.HTTP_204_NO_CONTENT)
 def remover_cartao(
     token: str,
-    usuario: UsuarioORM = Depends(usuario_service.get_current_user)
+    usuario: Usuario = Depends(usuario_service.get_current_user)
 ):
     # O serviço deve lançar HTTPException(404) caso o cartão não exista ou não pertença ao usuário
     removido = pagamento_service.remover_cartao(usuario.email, token)
@@ -128,7 +128,7 @@ def remover_cartao(
 )
 def validar_qr(
     dados: QrValidarRequest,
-    _usuario: UsuarioORM = Depends(usuario_service.get_current_user)
+    _usuario: Usuario = Depends(usuario_service.get_current_user)
 ):
     try:
         bicicleta = bicicleta_service.validar_qr(dados.qr_code)
@@ -140,7 +140,7 @@ def validar_qr(
 @router.post("/locacoes", response_model=LocacaoPublic, status_code=status.HTTP_201_CREATED)
 def iniciar_locacao(
     dados: LocacaoCreate,
-    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+    usuario: Usuario = Depends(usuario_service.get_current_user),
 ):
     try:
         locacao = locacao_service.iniciar_locacao(usuario.email, dados.qr_code)
@@ -153,7 +153,7 @@ def iniciar_locacao(
     response_model=LocacaoAndamento,
     responses={404: {"description": "Sem corrida em andamento"}},
 )
-def corrida_ativa(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
+def corrida_ativa(usuario: Usuario = Depends(usuario_service.get_current_user)):
     locacao = locacao_service.obter_locacao_ativa(usuario.email)
     return locacao_service.calcular_andamento(locacao)
 
@@ -169,7 +169,7 @@ def corrida_ativa(usuario: UsuarioORM = Depends(usuario_service.get_current_user
 )
 def encerrar_locacao(
     dados: EncerrarLocacaoRequest,
-    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+    usuario: Usuario = Depends(usuario_service.get_current_user),
 ):
     try:
         return locacao_service.encerrar_locacao(
@@ -213,7 +213,7 @@ def catalogo_pacotes():
 )
 def comprar_pacote(
     dados: CompraPacoteRequest,
-    usuario: UsuarioORM = Depends(usuario_service.get_current_user),
+    usuario: Usuario = Depends(usuario_service.get_current_user),
 ):
     # Pagamento recusado NÃO é erro HTTP: o pacote volta inativo e sem saldo,
     # com pagamento_status="RECUSADO".
@@ -225,7 +225,7 @@ def comprar_pacote(
  
  
 @router.get("/pacotes", response_model=list[PacoteResponse])
-def meus_pacotes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)):
+def meus_pacotes(usuario: Usuario = Depends(usuario_service.get_current_user)):
     return pacote_service.listar_pacotes(usuario.email)
 
 
@@ -237,6 +237,6 @@ def meus_pacotes(usuario: UsuarioORM = Depends(usuario_service.get_current_user)
 )
 def obter_comprovante(
     locacao_id: int,
-    usuario: UsuarioORM = Depends(usuario_service.get_current_user)
+    usuario: Usuario = Depends(usuario_service.get_current_user)
 ):
     return comprovante_service.obter_do_ciclista(locacao_id, usuario.email)
