@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from typing import Callable, ClassVar, Literal, Optional
 from datetime import datetime
 from dominio.erros import ConflitoDeRegra, RequisicaoInvalida
+from dominio.geolocalizacao.geolocalizacao import Geolocalizacao
 from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados.estados_bicicleta import EstadoBicicleta, estado_de
 from servicos_tecnicos.seguranca import conferir_senha
@@ -70,11 +71,22 @@ class EstacaoORM:
     id: int
     nome: str
     endereco: str
-    latitude: float
-    longitude: float
+    # Objeto de valor: no banco vira as colunas latitude e longitude.
+    localizacao: Geolocalizacao
     capacidade_total: int
     status: StatusEstacao = StatusEstacao.OPERACIONAL
     bicicletas: list = field(default_factory=list, repr=False, compare=False)
+
+    @property
+    def latitude(self) -> float:
+        return self.localizacao.latitude
+
+    @property
+    def longitude(self) -> float:
+        return self.localizacao.longitude
+
+    def distancia_ate_em_metros(self, outra: "EstacaoORM") -> float:
+        return self.localizacao.calcular_distancia_em_metros(outra.localizacao)
 
     @property
     def vagas_disponiveis(self) -> int:

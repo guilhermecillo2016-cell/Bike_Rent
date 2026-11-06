@@ -8,8 +8,6 @@ A validação de faixa de latitude/longitude e de capacidade > 0 já
 acontece no schema (EstacaoCreate); aqui ficam regras adicionais de
 negócio.
 """
-from math import asin, cos, radians, sin, sqrt
-
 from fastapi import HTTPException, status as http
 
 from dominio.auditoria import service as auditoria_service
@@ -137,13 +135,6 @@ def listar_estacoes() -> list[EstacaoORM]:
     return repo.list_all()
 
 
-def _distancia_km(a: EstacaoORM, b: EstacaoORM) -> float:
-    """Distância em linha reta (haversine) entre duas estações."""
-    lat1, lon1, lat2, lon2 = map(radians, (a.latitude, a.longitude, b.latitude, b.longitude))
-    h = sin((lat2 - lat1) / 2) ** 2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1) / 2) ** 2
-    return 6371 * 2 * asin(sqrt(h))
-
-
 def estacoes_proximas_com_vaga(referencia: EstacaoORM, limite: int = 3) -> list[EstacaoORM]:
     """Estações OPERACIONAIS com vaga livre, da mais perto para a mais longe."""
     candidatas = [
@@ -152,5 +143,5 @@ def estacoes_proximas_com_vaga(referencia: EstacaoORM, limite: int = 3) -> list[
         and e.status == StatusEstacao.OPERACIONAL
         and vagas_disponiveis(e) > 0
     ]
-    candidatas.sort(key=lambda e: _distancia_km(referencia, e))
+    candidatas.sort(key=referencia.distancia_ate_em_metros)
     return candidatas[:limite]
