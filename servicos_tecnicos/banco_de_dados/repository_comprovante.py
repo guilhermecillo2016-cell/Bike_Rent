@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import ComprovanteORM
+from dominio.comprovante.comprovante_viagem import ComprovanteViagem
 
 
 def create(
@@ -17,8 +17,8 @@ def create(
     tarifa_aplicada: float,
     locacao_id: int,
     pagamento_id: Optional[int] = None,
-) -> ComprovanteORM:
-    comprovante = ComprovanteORM(
+) -> ComprovanteViagem:
+    comprovante = ComprovanteViagem(
         id=memoria.proximo_id("comprovantes"),
         data_emissao=datetime.now(),
         resumo_trajeto=resumo_trajeto,
@@ -30,13 +30,13 @@ def create(
     return comprovante
 
 
-def get_by_id(comprovante_id: int) -> Optional[ComprovanteORM]:
+def get_by_id(comprovante_id: int) -> Optional[ComprovanteViagem]:
     return memoria.comprovantes.get(comprovante_id)
 
 
-def list_all() -> list[ComprovanteORM]:
+def list_all() -> list[ComprovanteViagem]:
     return list(memoria.comprovantes.values())
 
 
-def get_by_locacao(locacao_id: int) -> Optional[ComprovanteORM]:
+def get_by_locacao(locacao_id: int) -> Optional[ComprovanteViagem]:
     return next((c for c in memoria.comprovantes.values() if c.locacao_id == locacao_id), None)

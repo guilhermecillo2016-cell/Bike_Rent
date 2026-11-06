@@ -36,6 +36,8 @@ from dominio.auditoria.evento_auditoria import EventoAuditoria
 EventoAuditoriaORM = EventoAuditoria
 from dominio.avaria.reporte_avaria import ReporteAvaria
 ReporteAvariaORM = ReporteAvaria
+from dominio.comprovante.comprovante_viagem import ComprovanteViagem
+ComprovanteORM = ComprovanteViagem
 # ===== fim da compatibilidade =====
 
 
@@ -352,17 +354,6 @@ class PagamentoORM:
     pacote_id: Optional[int] = None
     token_cartao: Optional[str] = None
     qr_code_pix: Optional[str] = None
-
-
-@dataclass
-class ComprovanteORM:
-    id: int
-    data_emissao: datetime
-    resumo_trajeto: str
-    tarifa_aplicada: float
-    locacao_id: int
-    # None quando o pacote cobriu a corrida inteira (não houve cobrança)
-    pagamento_id: Optional[int] = None
 
 
 @dataclass

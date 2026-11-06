@@ -37,7 +37,7 @@ pagamentos: dict[int, "object"] = {}
 # id do reporte -> ReporteAvaria
 avarias: dict[int, "object"] = {}
 
-# id do comprovante -> ComprovanteORM
+# id do comprovante -> ComprovanteViagem
 comprovantes: dict[int, "object"] = {}
 
 # id do evento -> EventoAuditoria
