@@ -4,8 +4,7 @@ dominio/estacao/estacao.py
 Classe `Estacao` do diagrama. É a dona da associação com as bicicletas.
 """
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from dominio.erros import ConflitoDeRegra
 from dominio.geolocalizacao.geolocalizacao import Geolocalizacao
@@ -15,27 +14,50 @@ if TYPE_CHECKING:
     from dominio.bicicleta.bicicleta import Bicicleta
 
 
-@dataclass
 class Estacao:
     """Estação. É a ÚNICA dona da associação com as bicicletas: a lista
-    `bicicletas` é a fonte da verdade e `Bicicleta.estacao` só espelha."""
+    `bicicletas` é a fonte da verdade e `Bicicleta.estacao` só espelha.
 
-    id: int
-    nome: str
-    endereco: str
-    # Objeto de valor: no banco vira as colunas latitude e longitude.
-    localizacao: Geolocalizacao
-    capacidade_total: int
-    status: StatusEstacao = StatusEstacao.OPERACIONAL
-    bicicletas: list = field(default_factory=list, repr=False, compare=False)
+    Construtor do diagrama: Estacao(id_estacao, nome, endereco, capacidade).
+    A localização (Geolocalizacao, composição) entra como parâmetro opcional.
+    """
+
+    def __init__(
+        self,
+        id_estacao: int,
+        nome: str,
+        endereco: str,
+        capacidade: int,
+        *,
+        localizacao: Optional[Geolocalizacao] = None,
+        status: StatusEstacao = StatusEstacao.OPERACIONAL,
+    ):
+        self.id_estacao = id_estacao
+        self.nome = nome
+        self.endereco = endereco
+        self.capacidade_total = capacidade
+        # Objeto de valor: no banco vira as colunas latitude e longitude.
+        self.localizacao = localizacao
+        self.status = status
+        self.bicicletas: list["Bicicleta"] = []
+
+    def __repr__(self) -> str:
+        return (
+            f"Estacao(id_estacao={self.id_estacao!r}, nome={self.nome!r}, "
+            f"capacidade_total={self.capacidade_total!r}, status={self.status!r})"
+        )
 
     @property
-    def latitude(self) -> float:
-        return self.localizacao.latitude
+    def id(self) -> int:
+        return self.id_estacao
 
     @property
-    def longitude(self) -> float:
-        return self.localizacao.longitude
+    def latitude(self) -> Optional[float]:
+        return self.localizacao.latitude if self.localizacao is not None else None
+
+    @property
+    def longitude(self) -> Optional[float]:
+        return self.localizacao.longitude if self.localizacao is not None else None
 
     def distancia_ate_em_metros(self, outra: "Estacao") -> float:
         return self.localizacao.calcular_distancia_em_metros(outra.localizacao)

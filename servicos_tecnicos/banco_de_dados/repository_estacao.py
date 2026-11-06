@@ -13,13 +13,10 @@ from dominio.estacao.estacao import Estacao
 
 def create(nome: str, endereco: str, latitude: float, longitude: float, capacidade_total: int) -> Estacao:
     estacao = Estacao(
-        id=memoria.proximo_id("estacoes"),
-        nome=nome,
-        endereco=endereco,
+        memoria.proximo_id("estacoes"), nome, endereco, capacidade_total,
         localizacao=Geolocalizacao(latitude, longitude),
-        capacidade_total=capacidade_total,
     )
-    memoria.estacoes[estacao.id] = estacao
+    memoria.estacoes[estacao.id_estacao] = estacao
     return estacao
 
 
