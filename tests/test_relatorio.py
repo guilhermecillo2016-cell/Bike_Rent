@@ -77,7 +77,7 @@ def _montar():
 
     for bicicleta, quando in ((1, datetime(2026, 10, 1, 18, 0)), (1, datetime(2026, 10, 2, 8, 0)),
                               (4, datetime(2026, 10, 3, 9, 30)), (3, datetime(2026, 9, 10, 10, 0))):
-        repository_avaria.create("defeito", "cid@x.com", bicicleta).data_hora = quando
+        repository_avaria.create(memoria.bicicletas[bicicleta], cid, "defeito").data_hora = quando
 
 
 OUTUBRO = dict(inicio=date(2026, 10, 1), fim=date(2026, 10, 3))

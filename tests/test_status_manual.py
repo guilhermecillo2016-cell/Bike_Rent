@@ -18,6 +18,7 @@ from dominio.bicicleta import service as bicicletas
 from dominio.bicicleta.schemas import BicicletaCreate
 from dominio.estacao import service as estacoes
 from dominio.estacao.schemas import EstacaoCreate
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados import repository_avaria
 from servicos_tecnicos.banco_de_dados.enums import (
@@ -27,6 +28,7 @@ from servicos_tecnicos.banco_de_dados.enums import (
 )
 
 OP = "olga@x.com"
+CID = Usuario("Cid", "cid@x.com")
 
 
 def _estacao(capacidade=3):
@@ -169,7 +171,7 @@ class AvariaPendenteTests(BaseTestCase):
     def _bloqueada_com_avaria(self, status_avaria):
         bicicleta = _bicicleta(_estacao())
         bicicletas.alterar_status_manual(bicicleta.id, StatusBicicleta.EM_MANUTENCAO, OP)
-        avaria = repository_avaria.create("pneu furado", "cid@x.com", bicicleta.id)
+        avaria = repository_avaria.create(bicicleta, CID, "pneu furado")
         avaria.status = status_avaria
         return bicicleta
 
@@ -189,14 +191,14 @@ class AvariaPendenteTests(BaseTestCase):
 
     def test_avaria_pendente_nao_impede_bloquear(self):
         bicicleta = _bicicleta(_estacao())
-        repository_avaria.create("freio", "cid@x.com", bicicleta.id)
+        repository_avaria.create(bicicleta, CID, "freio")
         bicicletas.alterar_status_manual(bicicleta.id, StatusBicicleta.BLOQUEADA, OP)
         self.assertEqual(bicicleta.status, StatusBicicleta.BLOQUEADA)
 
     def test_avaria_de_outra_bicicleta_nao_atrapalha(self):
         estacao = _estacao()
         a, b = _bicicleta(estacao), _bicicleta(estacao)
-        repository_avaria.create("freio", "cid@x.com", a.id)
+        repository_avaria.create(a, CID, "freio")
         bicicletas.alterar_status_manual(b.id, StatusBicicleta.BLOQUEADA, OP)
         bicicletas.alterar_status_manual(b.id, StatusBicicleta.DISPONIVEL, OP)
         self.assertEqual(b.status, StatusBicicleta.DISPONIVEL)

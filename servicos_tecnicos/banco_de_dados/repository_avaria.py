@@ -6,26 +6,24 @@ ao encerrar a corrida. A mudança de status da bicicleta para
 EM_MANUTENCAO é feita pelo service, não aqui.
 """
 
-from datetime import datetime
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from dominio.avaria.reporte_avaria import ReporteAvaria
+from dominio.bicicleta.bicicleta import Bicicleta
+from dominio.usuario.usuario import Usuario
 
 
 def create(
+        bicicleta: Bicicleta,
+        usuario: Usuario,
         descricao: str,
-        usuario_email: str,
-        bicicleta_id: int,
         ) -> ReporteAvaria:
     avaria = ReporteAvaria(
-        id=memoria.proximo_id("avarias"),
-        descricao=descricao,
-        data_hora=datetime.now(),
-        usuario_email=usuario_email,
-        bicicleta_id=bicicleta_id,
+        bicicleta, usuario, descricao,
+        id_reporte=memoria.proximo_id("avarias"),
     )
-    memoria.avarias[avaria.id] = avaria
+    memoria.avarias[avaria.id_reporte] = avaria
     return avaria
 
 
