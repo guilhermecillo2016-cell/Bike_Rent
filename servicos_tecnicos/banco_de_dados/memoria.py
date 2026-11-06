@@ -22,7 +22,7 @@ estacoes: dict[int, "object"] = {}
 # id da bicicleta -> BicicletaORM
 bicicletas: dict[int, "object"] = {}
 
-# id do pacote -> PacoteMinutosORM
+# id do pacote -> PacoteMinutos
 pacotes: dict[int, "object"] = {}
 
 # email do usuário -> lista de Cartao

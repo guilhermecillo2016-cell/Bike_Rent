@@ -40,6 +40,8 @@ from dominio.comprovante.comprovante_viagem import ComprovanteViagem
 ComprovanteORM = ComprovanteViagem
 from dominio.pagamento.pagamento import Pagamento
 PagamentoORM = Pagamento
+from dominio.pacote.pacote_minutos import PacoteMinutos
+PacoteMinutosORM = PacoteMinutos
 # ===== fim da compatibilidade =====
 
 
@@ -341,14 +343,4 @@ class LocacaoORM:
     def is_em_andamento(self) -> bool:
         return self.em_andamento
 
-
-@dataclass
-class PacoteMinutosORM:
-    id: int
-    usuario_email: str
-    minutos_totais: int
-    minutos_restantes: int
-    data_validade: datetime
-    # False até o pagamento da compra ser aprovado
-    ativo: bool = False
 
