@@ -23,7 +23,7 @@ from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstaca
 
 
 def _estacoes():
-    # SUPOSIÇÃO: estacao_service.listar_estacoes() devolve as EstacaoORM.
+    # SUPOSIÇÃO: estacao_service.listar_estacoes() devolve as Estacao.
     return estacao_service.listar_estacoes()
 
 
@@ -32,7 +32,7 @@ def _bicicletas_disponiveis(estacao) -> int:
 
 
 def _vagas_livres(estacao) -> int:
-    # Estações injetadas nos testes já trazem o número; as reais (EstacaoORM)
+    # Estações injetadas nos testes já trazem o número; as reais (Estacao)
     # não guardam vagas, então é calculado pelas bicicletas que estão nela.
     vagas = getattr(estacao, "vagas_disponiveis", None)
     if vagas is not None:

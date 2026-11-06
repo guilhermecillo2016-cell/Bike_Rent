@@ -14,20 +14,21 @@ from dominio.auditoria import service as auditoria_service
 from servicos_tecnicos.banco_de_dados import repository_bicicleta
 from servicos_tecnicos.banco_de_dados import repository_estacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
-from servicos_tecnicos.banco_de_dados.models import BicicletaORM, EstacaoORM
+from servicos_tecnicos.banco_de_dados.models import BicicletaORM
+from dominio.estacao.estacao import Estacao
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
 
 
-def vagas_disponiveis(estacao: EstacaoORM) -> int:
+def vagas_disponiveis(estacao: Estacao) -> int:
     """Vagas livres = capacidade - bicicletas que estão na estação."""
     return estacao.vagas_disponiveis
 
 
-def bicicletas_disponiveis(estacao: EstacaoORM) -> int:
+def bicicletas_disponiveis(estacao: Estacao) -> int:
     return estacao.quantidade_bicicletas_disponiveis()
 
 
-def to_public(estacao: EstacaoORM) -> EstacaoPublic:
+def to_public(estacao: Estacao) -> EstacaoPublic:
     return EstacaoPublic(
         id=estacao.id,
         nome=estacao.nome,
@@ -41,7 +42,7 @@ def to_public(estacao: EstacaoORM) -> EstacaoPublic:
     )
 
 
-def obter_estacao(estacao_id: int) -> EstacaoORM:
+def obter_estacao(estacao_id: int) -> Estacao:
     """Devolve a estação ou levanta 404."""
     estacao = repo.get_by_id(estacao_id)
     if estacao is None:
@@ -52,7 +53,7 @@ def obter_estacao(estacao_id: int) -> EstacaoORM:
     return estacao
 
 
-def exigir_vaga_livre(estacao_id: int) -> EstacaoORM:
+def exigir_vaga_livre(estacao_id: int) -> Estacao:
     """Garante que a estação pode receber uma bicicleta agora.
 
     404 se não existe; 409 se não está OPERACIONAL (bloqueada ou em
@@ -106,7 +107,7 @@ def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
 
 def alterar_status_manual(
     estacao_id: int, novo_status: StatusEstacao, usuario_email: str
-) -> EstacaoORM:
+) -> Estacao:
     """Troca o status da estação à mão e registra na auditoria. 404 se não existe."""
     estacao = obter_estacao(estacao_id)
     novo_status = StatusEstacao(novo_status)
@@ -121,7 +122,7 @@ def alterar_status_manual(
     return estacao
 
 
-def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:
+def criar_estacao(dados: EstacaoCreate) -> Estacao:
     return repo.create(
         nome=dados.nome,
         endereco=dados.endereco,
@@ -131,11 +132,11 @@ def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:
     )
 
 
-def listar_estacoes() -> list[EstacaoORM]:
+def listar_estacoes() -> list[Estacao]:
     return repo.list_all()
 
 
-def estacoes_proximas_com_vaga(referencia: EstacaoORM, limite: int = 3) -> list[EstacaoORM]:
+def estacoes_proximas_com_vaga(referencia: Estacao, limite: int = 3) -> list[Estacao]:
     """Estações OPERACIONAIS com vaga livre, da mais perto para a mais longe."""
     candidatas = [
         e for e in repo.list_all()

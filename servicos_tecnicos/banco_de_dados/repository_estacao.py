@@ -8,11 +8,11 @@ from typing import Optional
 
 from dominio.geolocalizacao.geolocalizacao import Geolocalizacao
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import EstacaoORM
+from dominio.estacao.estacao import Estacao
 
 
-def create(nome: str, endereco: str, latitude: float, longitude: float, capacidade_total: int) -> EstacaoORM:
-    estacao = EstacaoORM(
+def create(nome: str, endereco: str, latitude: float, longitude: float, capacidade_total: int) -> Estacao:
+    estacao = Estacao(
         id=memoria.proximo_id("estacoes"),
         nome=nome,
         endereco=endereco,
@@ -23,9 +23,9 @@ def create(nome: str, endereco: str, latitude: float, longitude: float, capacida
     return estacao
 
 
-def list_all() -> list[EstacaoORM]:
+def list_all() -> list[Estacao]:
     return list(memoria.estacoes.values())
 
 
-def get_by_id(estacao_id: int) -> Optional[EstacaoORM]:
+def get_by_id(estacao_id: int) -> Optional[Estacao]:
     return memoria.estacoes.get(estacao_id)

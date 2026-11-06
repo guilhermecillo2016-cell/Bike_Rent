@@ -16,7 +16,7 @@ from collections import defaultdict
 # username/email -> Usuario
 usuarios: dict[str, "object"] = {}
 
-# id da estação -> EstacaoORM
+# id da estação -> Estacao
 estacoes: dict[int, "object"] = {}
 
 # id da bicicleta -> BicicletaORM
