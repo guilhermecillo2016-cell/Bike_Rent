@@ -12,11 +12,23 @@ from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
 TOKEN_CARTAO_RECUSADO = "tok_test_recusado"
 
 
-def cobrar(token: str, valor: float) -> StatusPagamento:
-    """Simula a cobrança de `valor` no cartão identificado por `token`.
+class GatewayPagamento:
+    """Classe `GatewayPagamento` do diagrama (serviço técnico simulado)."""
 
-    Devolve APROVADO ou RECUSADO; nunca levanta exceção por recusa.
-    """
-    if not token or token == TOKEN_CARTAO_RECUSADO:
-        return StatusPagamento.RECUSADO
-    return StatusPagamento.APROVADO
+    def cobrar(self, token: str, valor: float) -> StatusPagamento:
+        """Simula a cobrança de `valor` no cartão identificado por `token`.
+
+        Devolve APROVADO ou RECUSADO; nunca levanta exceção por recusa.
+        """
+        if not token or token == TOKEN_CARTAO_RECUSADO:
+            return StatusPagamento.RECUSADO
+        return StatusPagamento.APROVADO
+
+
+# Instância padrão; a função de módulo abaixo continua valendo para quem já
+# a importava.
+gateway_padrao = GatewayPagamento()
+
+
+def cobrar(token: str, valor: float) -> StatusPagamento:
+    return gateway_padrao.cobrar(token, valor)

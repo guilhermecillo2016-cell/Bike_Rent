@@ -18,7 +18,7 @@ from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
 from servicos_tecnicos.banco_de_dados.models import CartaoORM
 from servicos_tecnicos.banco_de_dados.models import PagamentoORM
 from dominio.pagamento.schemas import CartaoCreate
-from servicos_tecnicos.pagamentos import gateway as gateway_simulado
+from servicos_tecnicos.pagamentos.gateway import GatewayPagamento
 
 _TIPOS_CARTAO = {
     "credito" : TipoPagamento.CARTAO_CREDITO,
@@ -52,7 +52,7 @@ class PagamentoService:
         self.pagamento_repo = pagamento_repo or repository_pagamento
         self.cartao_repo = cartao_repo or repo
         self.locacao_repo = locacao_repo  # opcional: sem ele, não checa a locação
-        self.gateway = gateway or gateway_simulado
+        self.gateway = gateway or GatewayPagamento()
  
     # --- Consultas ----------------------------------------------------
     def obter_pagamento(self, pagamento_id):
