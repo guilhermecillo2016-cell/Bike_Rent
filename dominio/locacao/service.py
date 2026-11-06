@@ -17,7 +17,6 @@ from dominio.pagamento import service as pagamento_service
 from dominio.pacote import service as pacote_service
 
 from dominio.locacao.schemas import LocacaoPublic, LocacaoAndamento, LocacaoEncerrada
-from dominio.locacao import tarifa
 
 from dominio.avaria import service as avaria_service
 
@@ -109,12 +108,12 @@ def obter_locacao_ativa(user_email: str) -> LocacaoORM:
 
 def calcular_andamento(locacao: LocacaoORM, agora: Optional[datetime] = None) -> LocacaoAndamento:
     agora = agora or datetime.now()
-    segundos = max(0, int((agora - locacao.data_hora_inicio).total_seconds()))
-    minutos = tarifa.minutos_iniciados(segundos)
+    segundos = locacao.segundos_decorridos(agora)
+    minutos = locacao.minutos_decorridos(agora)
 
     saldo = pacote_service.saldo_minutos(locacao.usuario_email)
-    abatidos = min(minutos, saldo)
-    custo = tarifa.calcular_valor(minutos - abatidos)
+    abatidos = locacao.abater_saldo_pacote(saldo, agora)
+    custo = locacao.calcular_valor_trajeto(abatidos, agora)
 
     estacao = estacao_service.obter_estacao(locacao.estacao_origem_id)
 
@@ -183,18 +182,13 @@ def encerrar_locacao(
 
     # 4) Tarifa: abate o pacote e cobra só o excedente (RN-04/RN-05)
     fim = agora or datetime.now()
-    segundos = max(0, int((fim - locacao.data_hora_inicio).total_seconds()))
-    minutos = tarifa.minutos_iniciados(segundos)
+    segundos = locacao.segundos_decorridos(fim)
+    minutos = locacao.minutos_decorridos(fim)
     abatidos = pacote_service.abater_minutos(usuario_email, minutos)
-    valor = tarifa.calcular_valor(minutos - abatidos)
 
     # 5) Fecha a locação ANTES de cobrar
-    locacao.estacao_destino_id = destino.id
-    locacao.data_hora_fim = fim
-    locacao.duracao_minutos = minutos
-    locacao.minutos_pacote = abatidos
-    locacao.valor_total = valor
-    locacao.em_andamento = False
+    locacao.encerrar_locacao(destino, abatidos, fim)
+    valor = locacao.valor_total
 
     # 6) Cobrança do excedente (extensão 9-10a: valor 0 -> sem cobrança)
     pagamento = None
