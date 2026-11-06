@@ -5,28 +5,23 @@ Armazenamento em memória dos comprovantes digitais de viagem, um por
 locação encerrada. Nunca guarda dados sensíveis de cartão.
 """
 
-from datetime import datetime
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from dominio.comprovante.comprovante_viagem import ComprovanteViagem
+from dominio.locacao.locacao import Locacao
+from dominio.pagamento.pagamento import Pagamento
 
 
 def create(
-    resumo_trajeto: str,
-    tarifa_aplicada: float,
-    locacao_id: int,
-    pagamento_id: Optional[int] = None,
+    locacao: Locacao,
+    pagamento: Optional[Pagamento] = None,
 ) -> ComprovanteViagem:
     comprovante = ComprovanteViagem(
-        id=memoria.proximo_id("comprovantes"),
-        data_emissao=datetime.now(),
-        resumo_trajeto=resumo_trajeto,
-        tarifa_aplicada=tarifa_aplicada,
-        locacao_id=locacao_id,
-        pagamento_id=pagamento_id,
+        locacao, pagamento,
+        id_comprovante=memoria.proximo_id("comprovantes"),
     )
-    memoria.comprovantes[comprovante.id] = comprovante
+    memoria.comprovantes[comprovante.id_comprovante] = comprovante
     return comprovante
 
 
