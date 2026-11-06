@@ -14,6 +14,7 @@ dependem dos ORMs do projeto e estão isolados em `_estacoes` e
 
 from fastapi import HTTPException, status
 
+from dominio.estacao import service as estacao_service
 from dominio.estacao.schemas_disponibilidade import EstacaoDisponibilidade
 from dominio.geolocalizacao.geolocalizacao import Geolocalizacao
 from servicos_tecnicos import mapas
@@ -23,14 +24,10 @@ from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstaca
 
 def _estacoes():
     # SUPOSIÇÃO: estacao_service.listar_estacoes() devolve as EstacaoORM.
-    from dominio.estacao import service as estacao_service
-
     return estacao_service.listar_estacoes()
 
 
 def _bicicletas_disponiveis(estacao) -> int:
-    from dominio.estacao import service as estacao_service
-
     return estacao_service.bicicletas_disponiveis(estacao)  # só as aptas para locação
 
 
@@ -40,8 +37,6 @@ def _vagas_livres(estacao) -> int:
     vagas = getattr(estacao, "vagas_disponiveis", None)
     if vagas is not None:
         return vagas
-    from dominio.estacao import service as estacao_service
-
     return estacao_service.vagas_disponiveis(estacao)
 
 

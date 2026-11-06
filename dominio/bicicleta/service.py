@@ -16,7 +16,6 @@ from typing import Optional
 
 from fastapi import HTTPException, status as http
 
-from dominio import bicicleta
 from dominio.auditoria import service as auditoria_service
 from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic
 from dominio.estacao import service as estacao_service
