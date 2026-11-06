@@ -11,9 +11,10 @@ então a referência a ele é `usuario_email`.
 """
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, Literal, Optional
 from datetime import datetime
+from dominio.erros import ConflitoDeRegra
 from servicos_tecnicos.banco_de_dados.enums import (
     PapelUsuario,
     StatusAvaria,
@@ -38,6 +39,9 @@ class UsuarioORM:
 
 @dataclass
 class EstacaoORM:
+    """Estação. É a ÚNICA dona da associação com as bicicletas: a lista
+    `bicicletas` é a fonte da verdade e `Bicicleta.estacao` só espelha."""
+
     id: int
     nome: str
     endereco: str
@@ -45,6 +49,56 @@ class EstacaoORM:
     longitude: float
     capacidade_total: int
     status: StatusEstacao = StatusEstacao.OPERACIONAL
+    bicicletas: list = field(default_factory=list, repr=False, compare=False)
+
+    @property
+    def vagas_disponiveis(self) -> int:
+        """Derivado: capacidade menos as bicicletas que estão aqui."""
+        return self.capacidade_total - len(self.bicicletas)
+
+    def possui_vaga_livre(self) -> bool:
+        return self.status == StatusEstacao.OPERACIONAL and self.vagas_disponiveis > 0
+
+    def quantidade_bicicletas_disponiveis(self) -> int:
+        return sum(1 for b in self.bicicletas if b.apta_para_locacao())
+
+    def possui_bicicleta_disponivel(self) -> bool:
+        return self.quantidade_bicicletas_disponiveis() > 0
+
+    def exigir_vaga_livre(self) -> None:
+        """409 se não está OPERACIONAL (bloqueada ou em manutenção não recebe
+        nem libera bicicletas) ou se está lotada."""
+        if self.status != StatusEstacao.OPERACIONAL:
+            raise ConflitoDeRegra("A estação não está operacional")
+        if self.vagas_disponiveis <= 0:
+            raise ConflitoDeRegra("A estação está lotada")
+
+    def adicionar_bicicleta(self, bicicleta: "BicicletaORM") -> None:
+        """Guarda a bicicleta na lista SEM checar vaga nem status (usado no
+        cadastro; quem quer a regra completa usa alocar_bicicleta)."""
+        self.bicicletas.append(bicicleta)
+        bicicleta._entrar_na_estacao(self)
+
+    def alocar_bicicleta(self, bicicleta: "BicicletaORM") -> None:
+        """Estaciona a bicicleta aqui. 409 se a estação não aceita ou se a
+        bicicleta já está em uma estação."""
+        self.exigir_vaga_livre()
+        if bicicleta.estacao is not None:
+            raise ConflitoDeRegra("A bicicleta já está em uma estação")
+        self.adicionar_bicicleta(bicicleta)
+
+    def remover_bicicleta(self, bicicleta: "BicicletaORM") -> None:
+        """Tira a bicicleta daqui. 409 se a estação não está operacional ou
+        se a bicicleta não está nela."""
+        if self.status != StatusEstacao.OPERACIONAL:
+            raise ConflitoDeRegra("A estação não está operacional")
+        if not any(b is bicicleta for b in self.bicicletas):
+            raise ConflitoDeRegra("A bicicleta não está nesta estação")
+        self.bicicletas[:] = [b for b in self.bicicletas if b is not bicicleta]
+        bicicleta._sair_da_estacao()
+
+    def set_status(self, novo_status: StatusEstacao) -> None:
+        self.status = StatusEstacao(novo_status)
 
 
 @dataclass
@@ -62,9 +116,25 @@ class CartaoORM:
 class BicicletaORM:
     id: int
     qr_code: str
-    estacao_id: Optional[int] = None
     status: StatusBicicleta = StatusBicicleta.DISPONIVEL
     bloqueio_pendente: bool = False
+    # Espelho da lista da Estacao: só a própria Estacao mexe nisto
+    # (adicionar_bicicleta / remover_bicicleta).
+    _estacao: Optional[EstacaoORM] = field(default=None, init=False, repr=False, compare=False)
+
+    @property
+    def estacao(self) -> Optional[EstacaoORM]:
+        return self._estacao
+
+    @property
+    def estacao_id(self) -> Optional[int]:
+        return self._estacao.id if self._estacao is not None else None
+
+    def _entrar_na_estacao(self, estacao: EstacaoORM) -> None:
+        self._estacao = estacao
+
+    def _sair_da_estacao(self) -> None:
+        self._estacao = None
 
     def apta_para_locacao(self) -> bool:
         return self.status == StatusBicicleta.DISPONIVEL

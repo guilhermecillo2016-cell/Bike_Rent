@@ -21,14 +21,12 @@ from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
 
 
 def vagas_disponiveis(estacao: EstacaoORM) -> int:
-    """Vagas livres = capacidade - bicicletas cujo estacao_id é esta estação."""
-    ocupadas = len(repository_bicicleta.list_by_estacao(estacao.id))
-    return estacao.capacidade_total - ocupadas
+    """Vagas livres = capacidade - bicicletas que estão na estação."""
+    return estacao.vagas_disponiveis
 
 
 def bicicletas_disponiveis(estacao: EstacaoORM) -> int:
-    bicicletas = repository_bicicleta.list_by_estacao(estacao.id)
-    return sum(1 for b in bicicletas if b.apta_para_locacao())
+    return estacao.quantidade_bicicletas_disponiveis()
 
 
 def to_public(estacao: EstacaoORM) -> EstacaoPublic:
@@ -64,32 +62,19 @@ def exigir_vaga_livre(estacao_id: int) -> EstacaoORM:
     Devolve a estação.
     """
     estacao = obter_estacao(estacao_id)
-    if estacao.status != StatusEstacao.OPERACIONAL:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A estação não está operacional",
-        )
-    if vagas_disponiveis(estacao) <= 0:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A estação está lotada",
-        )
+    estacao.exigir_vaga_livre()
     return estacao
 
 
 def possui_vaga_livre(estacao_id: int) -> bool:
     """Versão sim/não de exigir_vaga_livre (404 se a estação não existe)."""
-    estacao = obter_estacao(estacao_id)
-    return (
-        estacao.status == StatusEstacao.OPERACIONAL
-        and vagas_disponiveis(estacao) > 0
-    )
+    return obter_estacao(estacao_id).possui_vaga_livre()
 
 
 def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
     """Estaciona a bicicleta na estação. 404 se algum dos dois não existe;
     409 se a estação não aceita ou se a bicicleta já está em outra."""
-    exigir_vaga_livre(estacao_id)
+    estacao = exigir_vaga_livre(estacao_id)
 
     bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
     if bicicleta is None:
@@ -97,13 +82,8 @@ def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
             status_code=http.HTTP_404_NOT_FOUND,
             detail="Bicicleta não encontrada",
         )
-    if bicicleta.estacao_id is not None:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A bicicleta já está em uma estação",
-        )
 
-    bicicleta.estacao_id = estacao_id
+    estacao.alocar_bicicleta(bicicleta)
     return bicicleta
 
 
@@ -116,20 +96,13 @@ def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
             status_code=http.HTTP_404_NOT_FOUND,
             detail="Bicicleta não encontrada",
         )
-    if bicicleta.estacao_id is None:
+    if bicicleta.estacao is None:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
             detail="A bicicleta não está em nenhuma estação",
         )
 
-    estacao = obter_estacao(bicicleta.estacao_id)
-    if estacao.status != StatusEstacao.OPERACIONAL:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A estação não está operacional",
-        )
-
-    bicicleta.estacao_id = None
+    bicicleta.estacao.remover_bicicleta(bicicleta)
     return bicicleta
 
 
@@ -143,7 +116,7 @@ def alterar_status_manual(
         return estacao
 
     anterior = str(estacao.status)
-    estacao.status = novo_status
+    estacao.set_status(novo_status)
     auditoria_service.registrar(
         usuario_email, "ESTACAO", estacao.id, anterior, str(novo_status)
     )

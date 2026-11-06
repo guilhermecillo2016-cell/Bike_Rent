@@ -1,9 +1,9 @@
 """
 servicos_tecnicos/banco_de_dados/repository_bicicleta.py
 -----------------------------------------------------------
-Armazenamento em memória das bicicletas. A localização de uma
-bicicleta é só o seu estacao_id: a estação não guarda lista nenhuma,
-a lista (e a contagem de vagas) sai de uma consulta por estacao_id.
+Armazenamento em memória das bicicletas. Quem guarda a lista das
+bicicletas de cada estação é a própria Estacao (fonte da verdade);
+Bicicleta.estacao_id só espelha essa associação.
 """
 
 import uuid
@@ -21,13 +21,15 @@ def _novo_qr_code() -> str:
             return qr_code
 
 
-def create(estacao_id: int) -> BicicletaORM:
+def create(estacao_id: Optional[int]) -> BicicletaORM:
     bicicleta = BicicletaORM(
         id=memoria.proximo_id("bicicletas"),
         qr_code=_novo_qr_code(),
-        estacao_id=estacao_id,
     )
     memoria.bicicletas[bicicleta.id] = bicicleta
+    estacao = memoria.estacoes.get(estacao_id) if estacao_id is not None else None
+    if estacao is not None:
+        estacao.adicionar_bicicleta(bicicleta)
     return bicicleta
 
 
@@ -44,4 +46,9 @@ def list_all() -> list[BicicletaORM]:
 
 
 def list_by_estacao(estacao_id: int) -> list[BicicletaORM]:
-    return [b for b in memoria.bicicletas.values() if b.estacao_id == estacao_id]
+    """Quem sabe quais bicicletas estão na estação é a própria Estacao;
+    aqui só se pergunta a ela (na ordem de cadastro, como sempre)."""
+    estacao = memoria.estacoes.get(estacao_id)
+    if estacao is None:
+        return []
+    return sorted(estacao.bicicletas, key=lambda b: b.id)
