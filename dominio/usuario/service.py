@@ -111,15 +111,12 @@ def register_user(dados: UsuarioCreate) -> Usuario:
             detail="Já existe uma conta com esse CPF",
         )
 
-    return repo.create(
-        nome=dados.nome,
-        email=dados.email,
-        senha_hash=get_password_hash(dados.senha),
-        cpf=cpf,
-        telefone=dados.telefone,
-        endereco=dados.endereco,
-        papel=PapelUsuario.CICLISTA,
+    usuario = Usuario(
+        dados.nome, dados.email, cpf, PapelUsuario.CICLISTA,
+        telefone=dados.telefone, endereco=dados.endereco,
     )
+    usuario.definir_senha(dados.senha)
+    return repo.create(usuario)
 
 
 # ------------------------------------------------------------------
@@ -134,12 +131,9 @@ def _cadastrar_equipe(dados: AdminCreate, papel: PapelUsuario) -> Usuario:
             detail="Já existe uma conta com esse e-mail",
         )
 
-    return repo.create(
-        nome=dados.nome,
-        email=dados.email,
-        senha_hash=get_password_hash(dados.senha),
-        papel=papel,
-    )
+    usuario = Usuario(dados.nome, dados.email, papel=papel)
+    usuario.definir_senha(dados.senha)
+    return repo.create(usuario)
 
 
 def register_admin(dados: AdminCreate) -> Usuario:

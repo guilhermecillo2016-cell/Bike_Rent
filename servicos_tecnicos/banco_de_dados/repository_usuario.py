@@ -10,7 +10,6 @@ from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from dominio.usuario.usuario import Usuario
-from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
 
 
 def get_by_email(email: str) -> Optional[Usuario]:
@@ -24,23 +23,7 @@ def get_by_cpf(cpf: str) -> Optional[Usuario]:
     return next((u for u in memoria.usuarios.values() if u.cpf == cpf), None)
 
 
-def create(
-    nome: str,
-    email: str,
-    senha_hash: str,
-    papel: PapelUsuario,
-    cpf: Optional[str] = None,
-    telefone: Optional[str] = None,
-    endereco: Optional[str] = None,
-) -> Usuario:
-    usuario = Usuario(
-        nome=nome,
-        email=email,
-        senha_hash=senha_hash,
-        cpf=cpf,
-        papel=papel,
-        telefone=telefone,
-        endereco=endereco,
-    )
-    memoria.usuarios[email] = usuario
+def create(usuario: Usuario) -> Usuario:
+    """Guarda o usuário já montado (o e-mail é a chave)."""
+    memoria.usuarios[usuario.email] = usuario
     return usuario
