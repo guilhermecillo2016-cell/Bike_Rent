@@ -40,8 +40,8 @@ def cadastrar_bicicleta(dados: BicicletaCreate) -> Bicicleta:
 
     404 se a estação não existe; 409 se não está operacional ou está lotada.
     """
-    estacao_service.exigir_vaga_livre(dados.estacao_id)
-    return repo.create(dados.estacao_id)
+    estacao = estacao_service.exigir_vaga_livre(dados.estacao_id)
+    return repo.create(estacao)
 
 
 def obter_bicicleta(bicicleta_id: int) -> Bicicleta:

@@ -41,10 +41,12 @@ A, B = 1, 2
 
 
 def _montar():
-    repository_estacao.create("Centro", "Rua A", -27.6, -48.5, 10)
-    repository_estacao.create("Praia", "Rua B", -27.5, -48.4, 10)
+    estacoes = {
+        A: repository_estacao.create("Centro", "Rua A", -27.6, -48.5, 10),
+        B: repository_estacao.create("Praia", "Rua B", -27.5, -48.4, 10),
+    }
     for estacao in (A, A, A, B):
-        repository_bicicleta.create(estacao)  # b1, b2, b3, b4
+        repository_bicicleta.create(estacoes[estacao])  # b1, b2, b3, b4
 
     def locacao(bicicleta, origem, quando, valor, status, pago_em):
         l = repository_locacao.create("cid@x.com", bicicleta, origem)
@@ -211,8 +213,8 @@ class FiltroDeEstacaoTests(RelatorioTestCase):
         self.assertEqual(self.codigo_http(estacao_id=999), 404)
 
     def test_empate_no_pico_fica_com_a_hora_mais_cedo(self):
-        repository_estacao.create("Centro", "Rua A", 0, 0, 5)
-        repository_bicicleta.create(1)
+        centro = repository_estacao.create("Centro", "Rua A", 0, 0, 5)
+        repository_bicicleta.create(centro)
         for hora in (18, 7):
             repository_locacao.create("cid@x.com", 1, 1).data_hora_inicio = datetime(2026, 10, 1, hora, 0)
         pico = service.gerar_relatorio().horarios_pico[0]

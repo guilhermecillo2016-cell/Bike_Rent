@@ -11,6 +11,7 @@ from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from dominio.bicicleta.bicicleta import Bicicleta
+from dominio.estacao.estacao import Estacao
 
 
 def _novo_qr_code() -> str:
@@ -21,13 +22,10 @@ def _novo_qr_code() -> str:
             return qr_code
 
 
-def create(estacao_id: Optional[int]) -> Bicicleta:
-    bicicleta = Bicicleta(
-        id=memoria.proximo_id("bicicletas"),
-        qr_code=_novo_qr_code(),
-    )
-    memoria.bicicletas[bicicleta.id] = bicicleta
-    estacao = memoria.estacoes.get(estacao_id) if estacao_id is not None else None
+def create(estacao: Optional[Estacao]) -> Bicicleta:
+    """Cria a bicicleta já estacionada em `estacao` (ou solta, se None)."""
+    bicicleta = Bicicleta(memoria.proximo_id("bicicletas"), _novo_qr_code())
+    memoria.bicicletas[bicicleta.id_bicicleta] = bicicleta
     if estacao is not None:
         estacao.adicionar_bicicleta(bicicleta)
     return bicicleta

@@ -35,7 +35,7 @@ def _estacao(capacidade=3, status=StatusEstacao.OPERACIONAL):
 
 def _bicicleta_solta():
     """Bicicleta que não está em nenhuma estação (como numa corrida)."""
-    bicicleta = repo.create(estacao_id=None)
+    bicicleta = repo.create(None)
     return bicicleta
 
 

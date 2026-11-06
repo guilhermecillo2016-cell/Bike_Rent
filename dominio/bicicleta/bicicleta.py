@@ -22,12 +22,12 @@ class Bicicleta:
 
     def __init__(
         self,
-        id: int,
+        id_bicicleta: int,
         qr_code: str,
         status: StatusBicicleta = StatusBicicleta.DISPONIVEL,
         bloqueio_pendente: bool = False,
     ):
-        self.id = id
+        self.id_bicicleta = id_bicicleta
         self.qr_code = qr_code
         self.bloqueio_pendente = bloqueio_pendente
         self._estado: EstadoBicicleta = estado_de(status)
@@ -35,9 +35,13 @@ class Bicicleta:
         # (adicionar_bicicleta / remover_bicicleta).
         self._estacao: Optional["Estacao"] = None
 
+    @property
+    def id(self) -> int:
+        return self.id_bicicleta
+
     def __repr__(self) -> str:
         return (
-            f"Bicicleta(id={self.id!r}, qr_code={self.qr_code!r}, "
+            f"Bicicleta(id_bicicleta={self.id_bicicleta!r}, qr_code={self.qr_code!r}, "
             f"status={self.status!r}, bloqueio_pendente={self.bloqueio_pendente!r})"
         )
 
