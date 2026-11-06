@@ -16,7 +16,7 @@ from servicos_tecnicos.banco_de_dados import repository_cartao as repo
 from servicos_tecnicos.banco_de_dados import repository_pagamento
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
 from dominio.pagamento.cartao import Cartao
-from servicos_tecnicos.banco_de_dados.models import PagamentoORM
+from dominio.pagamento.pagamento import Pagamento
 from dominio.pagamento.schemas import CartaoCreate
 from servicos_tecnicos.pagamentos.gateway import GatewayPagamento
 
@@ -71,7 +71,7 @@ class PagamentoService:
     def cobrar_corrida(self, email, valor, locacao_id):
         """Cobra a corrida no cartão de crédito vinculado ao usuário.
  
-        Recusa NÃO lança exceção: devolve o PagamentoORM com status RECUSADO
+        Recusa NÃO lança exceção: devolve o Pagamento com status RECUSADO
         para a locação decidir o que fazer.
         """
         self._validar_locacao(locacao_id)

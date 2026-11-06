@@ -31,7 +31,7 @@ cartoes: dict[str, list] = {}
 # id da locação -> LocacaoORM
 locacoes: dict[int, "object"] = {}
 
-# id do pagamento -> PagamentoORM
+# id do pagamento -> Pagamento
 pagamentos: dict[int, "object"] = {}
 
 # id do reporte -> ReporteAvaria

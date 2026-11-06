@@ -14,7 +14,7 @@ from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
-from servicos_tecnicos.banco_de_dados.models import PagamentoORM
+from dominio.pagamento.pagamento import Pagamento
 
 
 def create(
@@ -23,8 +23,8 @@ def create(
     locacao_id: Optional[int] = None,
     pacote_id: Optional[int] = None,
     token_cartao: Optional[str] = None,
-) -> PagamentoORM:
-    pagamento = PagamentoORM(
+) -> Pagamento:
+    pagamento = Pagamento(
         id=memoria.proximo_id("pagamentos"),
         valor=valor,
         tipo=tipo,
@@ -38,10 +38,10 @@ def create(
 
 
 
-def get_by_id(pagamento_id: int) -> Optional[PagamentoORM]:
+def get_by_id(pagamento_id: int) -> Optional[Pagamento]:
     return memoria.pagamentos.get(pagamento_id)
 
 
-def list_all() -> list[PagamentoORM]:
+def list_all() -> list[Pagamento]:
     return list(memoria.pagamentos.values())
 
