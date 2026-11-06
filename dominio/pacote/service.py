@@ -46,8 +46,7 @@ class PacoteService:
 
         pagamento = self.pagamento_service.cobrar_pacote(email, item.preco, pacote.id)
         if pagamento.status == StatusPagamento.APROVADO:
-            pacote.minutos_restantes = pacote.minutos_totais
-            pacote.ativo = True
+            pacote.ativar()
         return pacote, pagamento
 
     def listar_pacotes(self, email):
@@ -77,10 +76,7 @@ class PacoteService:
         ):
             if restante == 0:
                 break
-            consumo = min(pacote.minutos_restantes, restante)
-            pacote.minutos_restantes -= consumo
-            restante -= consumo
-            self._atualizar_situacao(pacote)  # zerou -> ativo=False
+            restante -= pacote.consumir(restante, self.relogio())  # zerou -> ativo=False
         return minutos - restante
 
     # --- Internos -----------------------------------------------------
@@ -96,10 +92,7 @@ class PacoteService:
 
     def _atualizar_situacao(self, pacote):
         """Pacote ativo que venceu ou zerou passa a ativo=False."""
-        if pacote.ativo and (
-            pacote.minutos_restantes <= 0 or pacote.data_validade <= self.relogio()
-        ):
-            pacote.ativo = False
+        pacote.atualizar_situacao(self.relogio())
 
     def _pacotes_validos(self, email):
         pacotes = self.pacote_repo.list_by_email(email)
