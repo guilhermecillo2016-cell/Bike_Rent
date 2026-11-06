@@ -14,7 +14,7 @@ from dominio.auditoria import service as auditoria_service
 from servicos_tecnicos.banco_de_dados import repository_bicicleta
 from servicos_tecnicos.banco_de_dados import repository_estacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
-from servicos_tecnicos.banco_de_dados.models import BicicletaORM
+from dominio.bicicleta.bicicleta import Bicicleta
 from dominio.estacao.estacao import Estacao
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
 
@@ -70,7 +70,7 @@ def possui_vaga_livre(estacao_id: int) -> bool:
     return obter_estacao(estacao_id).possui_vaga_livre()
 
 
-def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
+def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> Bicicleta:
     """Estaciona a bicicleta na estação. 404 se algum dos dois não existe;
     409 se a estação não aceita ou se a bicicleta já está em outra."""
     estacao = exigir_vaga_livre(estacao_id)
@@ -86,7 +86,7 @@ def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
     return bicicleta
 
 
-def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
+def remover_bicicleta(bicicleta_id: int) -> Bicicleta:
     """Tira a bicicleta da estação. 404 se ela não existe; 409 se não está em
     nenhuma estação ou se a estação dela não está operacional."""
     bicicleta = repository_bicicleta.get_by_id(bicicleta_id)

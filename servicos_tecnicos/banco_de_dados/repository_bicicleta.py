@@ -10,7 +10,7 @@ import uuid
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import BicicletaORM
+from dominio.bicicleta.bicicleta import Bicicleta
 
 
 def _novo_qr_code() -> str:
@@ -21,8 +21,8 @@ def _novo_qr_code() -> str:
             return qr_code
 
 
-def create(estacao_id: Optional[int]) -> BicicletaORM:
-    bicicleta = BicicletaORM(
+def create(estacao_id: Optional[int]) -> Bicicleta:
+    bicicleta = Bicicleta(
         id=memoria.proximo_id("bicicletas"),
         qr_code=_novo_qr_code(),
     )
@@ -33,19 +33,19 @@ def create(estacao_id: Optional[int]) -> BicicletaORM:
     return bicicleta
 
 
-def get_by_id(bicicleta_id: int) -> Optional[BicicletaORM]:
+def get_by_id(bicicleta_id: int) -> Optional[Bicicleta]:
     return memoria.bicicletas.get(bicicleta_id)
 
 
-def get_by_qr(qr_code: str) -> Optional[BicicletaORM]:
+def get_by_qr(qr_code: str) -> Optional[Bicicleta]:
     return next((b for b in memoria.bicicletas.values() if b.qr_code == qr_code), None)
 
 
-def list_all() -> list[BicicletaORM]:
+def list_all() -> list[Bicicleta]:
     return list(memoria.bicicletas.values())
 
 
-def list_by_estacao(estacao_id: int) -> list[BicicletaORM]:
+def list_by_estacao(estacao_id: int) -> list[Bicicleta]:
     """Quem sabe quais bicicletas estão na estação é a própria Estacao;
     aqui só se pergunta a ela (na ordem de cadastro, como sempre)."""
     estacao = memoria.estacoes.get(estacao_id)

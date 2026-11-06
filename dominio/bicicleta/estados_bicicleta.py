@@ -1,6 +1,6 @@
 """
-servicos_tecnicos/banco_de_dados/estados_bicicleta.py
---------------------------------------------------------
+dominio/bicicleta/estados_bicicleta.py
+--------------------------------------
 Padrão State para o status da Bicicleta. Cada estado sabe o que a bicicleta
 aceita fazer enquanto está nele e para onde ela vai em seguida; a Bicicleta
 só repassa a chamada ao estado atual.

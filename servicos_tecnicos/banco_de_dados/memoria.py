@@ -19,7 +19,7 @@ usuarios: dict[str, "object"] = {}
 # id da estação -> Estacao
 estacoes: dict[int, "object"] = {}
 
-# id da bicicleta -> BicicletaORM
+# id da bicicleta -> Bicicleta
 bicicletas: dict[int, "object"] = {}
 
 # id do pacote -> PacoteMinutos

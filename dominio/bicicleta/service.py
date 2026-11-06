@@ -6,7 +6,7 @@ troca de status. É daqui que as outras trilhas consomem a bicicleta:
 
 - get_by_qr(qr)         -> validação do QR Code (B2)
 - set_status(id, st)    -> transições da corrida (B3/B5/B6)
-- apta_para_locacao()   -> método do próprio BicicletaORM
+- apta_para_locacao()   -> método do próprio Bicicleta
 
 A localização de uma bicicleta é só o seu estacao_id; a lista e a
 contagem de vagas da estação saem de consultas por esse campo.
@@ -22,10 +22,10 @@ from dominio.estacao import service as estacao_service
 from servicos_tecnicos.banco_de_dados import repository_avaria
 from servicos_tecnicos.banco_de_dados import repository_bicicleta as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusAvaria, StatusBicicleta
-from servicos_tecnicos.banco_de_dados.models import BicicletaORM
+from dominio.bicicleta.bicicleta import Bicicleta
 
 
-def to_public(bicicleta: BicicletaORM) -> BicicletaPublic:
+def to_public(bicicleta: Bicicleta) -> BicicletaPublic:
     return BicicletaPublic(
         id=bicicleta.id,
         qr_code=bicicleta.qr_code,
@@ -35,7 +35,7 @@ def to_public(bicicleta: BicicletaORM) -> BicicletaPublic:
     )
 
 
-def cadastrar_bicicleta(dados: BicicletaCreate) -> BicicletaORM:
+def cadastrar_bicicleta(dados: BicicletaCreate) -> Bicicleta:
     """Cadastra a bicicleta já estacionada na estação, ocupando uma vaga.
 
     404 se a estação não existe; 409 se não está operacional ou está lotada.
@@ -44,7 +44,7 @@ def cadastrar_bicicleta(dados: BicicletaCreate) -> BicicletaORM:
     return repo.create(dados.estacao_id)
 
 
-def obter_bicicleta(bicicleta_id: int) -> BicicletaORM:
+def obter_bicicleta(bicicleta_id: int) -> Bicicleta:
     bicicleta = repo.get_by_id(bicicleta_id)
     if bicicleta is None:
         raise HTTPException(
@@ -54,7 +54,7 @@ def obter_bicicleta(bicicleta_id: int) -> BicicletaORM:
     return bicicleta
 
 
-def get_by_qr(qr_code: str) -> BicicletaORM:
+def get_by_qr(qr_code: str) -> Bicicleta:
     """Bicicleta dona do QR Code lido (extensão 3a do UC1: QR inválido -> 404)."""
     bicicleta = repo.get_by_qr((qr_code or "").strip())
     if bicicleta is None:
@@ -65,7 +65,7 @@ def get_by_qr(qr_code: str) -> BicicletaORM:
     return bicicleta
 
 
-def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> BicicletaORM:
+def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> Bicicleta:
     """Troca interna de status, sem auditoria (usada pelo fluxo da corrida).
 
     A alteração manual feita por administrador/operador, com registro de
@@ -83,7 +83,7 @@ tem_avaria_pendente = _tem_avaria_pendente
 
 def alterar_status_manual(
     bicicleta_id: int, novo_status: StatusBicicleta, usuario_email: str
-) -> BicicletaORM:
+) -> Bicicleta:
     """Troca o status à mão (administrador ou operador) e registra na auditoria.
 
     Bicicleta em corrida não muda na hora: o bloqueio fica agendado
@@ -103,7 +103,7 @@ def alterar_status_manual(
     return bicicleta
 
 
-def finalizar_uso(bicicleta_id: int) -> BicicletaORM:
+def finalizar_uso(bicicleta_id: int) -> Bicicleta:
     """Chamada ao encerrar a corrida: a bicicleta volta a DISPONIVEL, ou vai
     para EM_MANUTENCAO se houver bloqueio agendado (que então é limpo)."""
     bicicleta = obter_bicicleta(bicicleta_id)
@@ -118,7 +118,7 @@ def finalizar_uso(bicicleta_id: int) -> BicicletaORM:
 def listar_bicicletas(
     status: Optional[StatusBicicleta] = None,
     estacao_id: Optional[int] = None,
-) -> list[BicicletaORM]:
+) -> list[Bicicleta]:
     bicicletas = repo.list_all()
     if status is not None:
         bicicletas = [b for b in bicicletas if b.status == status]
@@ -131,11 +131,11 @@ class BicicletaIndisponivel(Exception):
     """Bicicleta existe, mas não está apta (EM_USO, EM_MANUTENCAO ou
     BLOQUEADA). Carrega as alternativas da mesma estação (extensão 3b)."""
 
-    def __init__(self, bicicleta: BicicletaORM, sugestoes : list[BicicletaORM]):
+    def __init__(self, bicicleta: Bicicleta, sugestoes : list[Bicicleta]):
         self.bicicleta = bicicleta
         self.sugestoes = sugestoes
 
-def validar_qr(qr_code: str) -> BicicletaORM:
+def validar_qr(qr_code: str) -> Bicicleta:
     bicicleta = get_by_qr(qr_code)
 
     if not bicicleta.apta_para_locacao():
