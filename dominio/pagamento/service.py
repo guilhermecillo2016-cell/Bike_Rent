@@ -15,7 +15,7 @@ from servicos_tecnicos.pagamentos import tokenizador
 from servicos_tecnicos.banco_de_dados import repository_cartao as repo
 from servicos_tecnicos.banco_de_dados import repository_pagamento
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
-from servicos_tecnicos.banco_de_dados.models import CartaoORM
+from dominio.pagamento.cartao import Cartao
 from servicos_tecnicos.banco_de_dados.models import PagamentoORM
 from dominio.pagamento.schemas import CartaoCreate
 from servicos_tecnicos.pagamentos.gateway import GatewayPagamento
@@ -111,7 +111,7 @@ class PagamentoService:
         return pagamento
  
     # --- Cartões (RF-11, RN-06) ---------------------------------------
-    def vincular_cartao(self, email_usuario: str, dados: CartaoCreate) -> CartaoORM:
+    def vincular_cartao(self, email_usuario: str, dados: CartaoCreate) -> Cartao:
         """"if not _numero_valido_luhn(dados.numero_cartao):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -125,7 +125,7 @@ class PagamentoService:
 
         resultado = tokenizador.tokenizar(dados.numero_cartao)
 
-        cartao = CartaoORM(
+        cartao = Cartao(
             token=resultado["token"],
             ultimos_digitos=resultado["ultimos_digitos"],
             bandeira=resultado["bandeira"],
@@ -136,7 +136,7 @@ class PagamentoService:
         )
         return self.cartao_repo.add_cartao(email_usuario, cartao)
 
-    def listar_cartoes(self, email_usuario: str) -> list[CartaoORM]:
+    def listar_cartoes(self, email_usuario: str) -> list[Cartao]:
         return self.cartao_repo.list_cartoes(email_usuario)
 
     def remover_cartao(self, email_usuario: str, token: str) -> bool:
@@ -221,11 +221,11 @@ def _validade_no_futuro(validade: str) -> bool:
 # Fachada de módulo (mesmas assinaturas de sempre): quem faz o trabalho é
 # a classe PagamentoService.
 # ----------------------------------------------------------------------
-def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> CartaoORM:
+def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> Cartao:
     return PagamentoService().vincular_cartao(email_usuario, dados)
 
 
-def listar_cartoes(email_usuario: str) -> list[CartaoORM]:
+def listar_cartoes(email_usuario: str) -> list[Cartao]:
     return PagamentoService().listar_cartoes(email_usuario)
 
 

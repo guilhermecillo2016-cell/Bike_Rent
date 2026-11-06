@@ -25,7 +25,7 @@ bicicletas: dict[int, "object"] = {}
 # id do pacote -> PacoteMinutosORM
 pacotes: dict[int, "object"] = {}
 
-# email do usuário -> lista de CartaoORM
+# email do usuário -> lista de Cartao
 cartoes: dict[str, list] = {}
 
 # id da locação -> LocacaoORM

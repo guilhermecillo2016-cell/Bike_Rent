@@ -29,6 +29,12 @@ from servicos_tecnicos.banco_de_dados.enums import (
 )
 
 
+# ===== compatibilidade: classes que já saíram deste arquivo =====
+from dominio.pagamento.cartao import Cartao
+CartaoORM = Cartao
+# ===== fim da compatibilidade =====
+
+
 @dataclass
 class UsuarioORM:
     nome: str
@@ -136,17 +142,6 @@ class EstacaoORM:
 
     def set_status(self, novo_status: StatusEstacao) -> None:
         self.status = StatusEstacao(novo_status)
-
-
-@dataclass
-class CartaoORM:
-    token: str
-    ultimos_digitos: str
-    bandeira: str
-    nome_titular: str
-    validade: str
-    tipo: str
-    apelido: Optional[str] = None
 
 
 class BicicletaORM:
