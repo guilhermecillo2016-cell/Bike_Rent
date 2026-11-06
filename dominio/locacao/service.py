@@ -205,7 +205,6 @@ def encerrar_locacao(
 
     pendente = valor > 0 and (pagamento is None or pagamento.status != StatusPagamento.APROVADO)
 
-    origem = locacao.estacao_origem
     comprovante = comprovante_service.emitir(locacao, pagamento)
 
     return LocacaoEncerrada(
