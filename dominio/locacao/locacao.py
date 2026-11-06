@@ -5,28 +5,73 @@ Classe `Locacao` do diagrama: a corrida. A tarifa (RN-04) é regra dela.
 """
 
 import os
-from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Optional
 
 if TYPE_CHECKING:
+    from dominio.bicicleta.bicicleta import Bicicleta
     from dominio.estacao.estacao import Estacao
+    from dominio.usuario.usuario import Usuario
 
 
-@dataclass
 class Locacao:
-    id: int
-    usuario_email: str
-    bicicleta_id: int
-    estacao_origem_id: int
-    data_hora_inicio: datetime
-    estacao_destino_id: Optional[int] = None
-    data_hora_fim: Optional[datetime] = None
-    duracao_minutos: Optional[int] = None
-    # minutos abatidos do pacote; valor_total cobre só o excedente (RN-04/RN-05)
-    minutos_pacote: int = 0
-    valor_total: Optional[float] = None
-    em_andamento: bool = True
+    """Construtor do diagrama: Locacao(usuario, bicicleta, origem).
+
+    Guarda os objetos (usuario, bicicleta, estacao_origem e, depois de
+    encerrar, estacao_destino). Os nomes antigos (usuario_email,
+    bicicleta_id, estacao_origem_id, estacao_destino_id) continuam
+    disponíveis como propriedades de leitura. O id (`id_locacao`) é dado
+    pelo repositório ao guardar.
+    """
+
+    def __init__(
+        self,
+        usuario: "Usuario",
+        bicicleta: "Bicicleta",
+        origem: "Estacao",
+        *,
+        data_hora_inicio: Optional[datetime] = None,
+        id_locacao: Optional[int] = None,
+    ):
+        self.id_locacao = id_locacao
+        self.usuario = usuario
+        self.bicicleta = bicicleta
+        self.estacao_origem = origem
+        self.estacao_destino: Optional["Estacao"] = None
+        self.data_hora_inicio = data_hora_inicio or datetime.now()
+        self.data_hora_fim: Optional[datetime] = None
+        self.duracao_minutos: Optional[int] = None
+        # minutos abatidos do pacote; valor_total cobre só o excedente (RN-04/RN-05)
+        self.minutos_pacote = 0
+        self.valor_total: Optional[float] = None
+        self.em_andamento = True
+
+    def __repr__(self) -> str:
+        return (
+            f"Locacao(id_locacao={self.id_locacao!r}, usuario_email={self.usuario_email!r}, "
+            f"bicicleta_id={self.bicicleta_id!r}, em_andamento={self.em_andamento!r})"
+        )
+
+    # --- nomes antigos, só leitura ----------------------------------------
+    @property
+    def id(self) -> Optional[int]:
+        return self.id_locacao
+
+    @property
+    def usuario_email(self) -> str:
+        return self.usuario.email
+
+    @property
+    def bicicleta_id(self) -> int:
+        return self.bicicleta.id_bicicleta
+
+    @property
+    def estacao_origem_id(self) -> int:
+        return self.estacao_origem.id_estacao
+
+    @property
+    def estacao_destino_id(self) -> Optional[int]:
+        return self.estacao_destino.id_estacao if self.estacao_destino is not None else None
 
     # ------------------------------------------------------------------
     # Tarifa (RN-04): absorvida pela Locação, sem entidade própria.
@@ -88,7 +133,7 @@ class Locacao:
         """Fecha a corrida na estação de destino, fixando duração, minutos
         cobertos pelo pacote e valor do excedente."""
         fim = agora or datetime.now()
-        self.estacao_destino_id = destino.id
+        self.estacao_destino = destino
         self.data_hora_fim = fim
         self.duracao_minutos = self.minutos_decorridos(fim)
         self.minutos_pacote = minutos_pacote

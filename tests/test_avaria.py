@@ -20,6 +20,7 @@ from servicos_tecnicos.banco_de_dados.enums import (
     PapelUsuario, StatusAvaria, StatusBicicleta, StatusPagamento,
 )
 from servicos_tecnicos.banco_de_dados.models import UsuarioORM
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.iot import definir_trava
 from servicos_tecnicos.iot.mock import ModoTrava, TravaInteligenteMock
 
@@ -33,6 +34,7 @@ def _limpa(monkeypatch):
               memoria.pacotes, memoria.avarias, memoria.eventos_auditoria, memoria.usuarios):
         d.clear()
     memoria._contadores.clear()
+    memoria.usuarios[EMAIL] = Usuario("Fulano", EMAIL)
     definir_trava(TravaInteligenteMock(ModoTrava.SUCESSO))
     monkeypatch.setattr(
         pagamento_service.PagamentoService, "cobrar_corrida",

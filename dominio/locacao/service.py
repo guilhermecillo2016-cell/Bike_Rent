@@ -12,6 +12,7 @@ from typing import Optional
 
 from dominio.bicicleta import service as bicicleta_service
 from dominio.estacao import service as estacao_service
+from dominio.usuario import service as usuario_service
 
 from dominio.pagamento import service as pagamento_service
 from dominio.pacote import service as pacote_service
@@ -54,6 +55,8 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
     400 sem cartão; 404 QR inexistente; BicicletaIndisponivel se inapta;
     503 se a trava não abriu (nada é alterado).
     """
+    usuario = usuario_service.obter_usuario(usuario_email)
+
     if repo.get_ativa_by_usuario(usuario_email) is not None:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
@@ -73,7 +76,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
             status_code=http.HTTP_409_CONFLICT,
             detail="A bicicleta não está em nenhuma estação",
         )
-    estacao = estacao_service.obter_estacao(bicicleta.estacao_id)
+    estacao = bicicleta.estacao
     if estacao.status != StatusEstacao.OPERACIONAL:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
@@ -92,7 +95,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
         )
 
     # Trava confirmada: agora sim a contagem começa (relógio do servidor).
-    locacao = repo.create(usuario_email, bicicleta.id, bicicleta.estacao_id)
+    locacao = repo.create(usuario, bicicleta, estacao)
     estacao_service.remover_bicicleta(bicicleta.id)  # estacao_id = None
     bicicleta.iniciar_uso()
     return locacao
@@ -115,7 +118,7 @@ def calcular_andamento(locacao: Locacao, agora: Optional[datetime] = None) -> Lo
     abatidos = locacao.abater_saldo_pacote(saldo, agora)
     custo = locacao.calcular_valor_trajeto(abatidos, agora)
 
-    estacao = estacao_service.obter_estacao(locacao.estacao_origem_id)
+    estacao = locacao.estacao_origem
 
     return LocacaoAndamento(
         locacao_id=locacao.id,
@@ -202,7 +205,7 @@ def encerrar_locacao(
 
     pendente = valor > 0 and (pagamento is None or pagamento.status != StatusPagamento.APROVADO)
 
-    origem = estacao_service.obter_estacao(locacao.estacao_origem_id)
+    origem = locacao.estacao_origem
     comprovante = comprovante_service.emitir(locacao, origem, destino, pagamento)
 
     return LocacaoEncerrada(

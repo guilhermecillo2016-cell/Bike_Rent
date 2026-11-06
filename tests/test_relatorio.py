@@ -28,6 +28,7 @@ from datetime import date, datetime
 from fastapi import HTTPException
 
 from apresentacao import adminweb
+from dominio.usuario.usuario import Usuario
 from dominio.relatorio import service
 from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados import repository_avaria
@@ -48,8 +49,10 @@ def _montar():
     for estacao in (A, A, A, B):
         repository_bicicleta.create(estacoes[estacao])  # b1, b2, b3, b4
 
+    cid = Usuario("Cid", "cid@x.com")
+
     def locacao(bicicleta, origem, quando, valor, status, pago_em):
-        l = repository_locacao.create("cid@x.com", bicicleta, origem)
+        l = repository_locacao.create(cid, memoria.bicicletas[bicicleta], memoria.estacoes[origem])
         l.data_hora_inicio = quando
         l.valor_total = valor
         l.em_andamento = False
@@ -216,7 +219,9 @@ class FiltroDeEstacaoTests(RelatorioTestCase):
         centro = repository_estacao.create("Centro", "Rua A", 0, 0, 5)
         repository_bicicleta.create(centro)
         for hora in (18, 7):
-            repository_locacao.create("cid@x.com", 1, 1).data_hora_inicio = datetime(2026, 10, 1, hora, 0)
+            repository_locacao.create(
+                Usuario("Cid", "cid@x.com"), memoria.bicicletas[1], centro
+            ).data_hora_inicio = datetime(2026, 10, 1, hora, 0)
         pico = service.gerar_relatorio().horarios_pico[0]
         self.assertEqual((pico.hora_pico, pico.locacoes_na_hora_pico), (7, 1))
 

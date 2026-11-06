@@ -8,23 +8,23 @@ corrida ativa por ciclista" ficam no service; aqui só se guarda.
 from datetime import datetime
 from typing import Optional
 
+from dominio.bicicleta.bicicleta import Bicicleta
+from dominio.estacao.estacao import Estacao
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.banco_de_dados import memoria
 from dominio.locacao.locacao import Locacao
 
 
 def create(
-    usuario_email: str,
-    bicicleta_id: int,
-    estacao_origem_id: int,
+    usuario: Usuario,
+    bicicleta: Bicicleta,
+    estacao_origem: Estacao,
 ) -> Locacao:
     locacao = Locacao(
-        id=memoria.proximo_id("locacoes"),
-        usuario_email=usuario_email,
-        bicicleta_id=bicicleta_id,
-        estacao_origem_id=estacao_origem_id,
-        data_hora_inicio=datetime.now(),
+        usuario, bicicleta, estacao_origem,
+        id_locacao=memoria.proximo_id("locacoes"),
     )
-    memoria.locacoes[locacao.id] = locacao
+    memoria.locacoes[locacao.id_locacao] = locacao
     return locacao
 
 
