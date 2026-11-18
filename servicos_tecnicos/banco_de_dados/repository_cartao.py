@@ -36,3 +36,11 @@ def get_credito_by_email(email_usuario: str) -> Cartao:
         if c.tipo == "CARTAO_CREDITO":
             return c
     return None
+
+
+def get_debito_by_email(email_usuario: str) -> Cartao:
+    """Retorna o cartão de débito do usuário, ou None se não houver."""
+    for c in memoria.cartoes.get(email_usuario, []):
+        if c.tipo == "CARTAO_DEBITO":
+            return c
+    return None

@@ -13,9 +13,19 @@ from fastapi import HTTPException, status
 
 from servicos_tecnicos.pagamentos import tokenizador
 from servicos_tecnicos.banco_de_dados import repository_cartao as repo
-from servicos_tecnicos.banco_de_dados import repository_locacao, repository_pacote, repository_pagamento
+from servicos_tecnicos.banco_de_dados import (
+    repository_locacao,
+    repository_pacote,
+    repository_pagamento,
+    repository_usuario,
+)
 from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
 from dominio.pagamento.cartao import Cartao
+from dominio.pagamento.metodos_pagamento import (
+    PagamentoCartaoCredito,
+    PagamentoCartaoDebito,
+    PagamentoPix,
+)
 from dominio.pagamento.pagamento import Pagamento
 from dominio.pagamento.schemas import CartaoCreate
 from servicos_tecnicos.pagamentos.gateway import GatewayPagamento
@@ -44,17 +54,34 @@ class PagamentoService:
  
     Os repositories e o gateway são módulos/objetos injetáveis; por padrão usa
     os repositories em memória e o gateway simulado.
+
+    A forma de pagamento é uma estratégia (padrão Strategy): `metodos` mapeia
+    cada TipoPagamento para o MetodoPagamento que o processa.
     """
  
     def __init__(
         self, pagamento_repo=None, cartao_repo=None, locacao_repo=None,
-        pacote_repo=None, gateway=None,
+        pacote_repo=None, gateway=None, usuario_repo=None,
     ):
         self.pagamento_repo = pagamento_repo or repository_pagamento
         self.cartao_repo = cartao_repo or repo
         self.locacao_repo = locacao_repo or repository_locacao
         self.pacote_repo = pacote_repo or repository_pacote
         self.gateway = gateway or GatewayPagamento()
+        self.usuario_repo = usuario_repo or repository_usuario
+        self.metodos = {
+            metodo.tipo: metodo
+            for metodo in (
+                PagamentoCartaoCredito(self.gateway),
+                PagamentoCartaoDebito(self.gateway),
+                PagamentoPix(),
+            )
+        }
+        # Qual cartão cada tipo exige (o PIX não usa cartão).
+        self._cartao_do_tipo = {
+            TipoPagamento.CARTAO_CREDITO: self.exigir_cartao_credito,
+            TipoPagamento.CARTAO_DEBITO: self.exigir_cartao_debito,
+        }
  
     # --- Consultas ----------------------------------------------------
     def obter_pagamento(self, pagamento_id):
@@ -79,10 +106,11 @@ class PagamentoService:
         locacao = self._obter_locacao(locacao_id)
         return self._cobrar(email, valor, locacao=locacao)
  
-    def cobrar_pacote(self, email, valor, pacote_id):
-        """Cobra a compra de um pacote de minutos (mesmo gateway da corrida)."""
+    def cobrar_pacote(self, email, valor, pacote_id, tipo=TipoPagamento.CARTAO_CREDITO):
+        """Cobra a compra de um pacote de minutos (mesmo gateway da corrida).
+        `tipo` escolhe a estratégia; o padrão é o cartão de crédito."""
         pacote = self._obter_pacote(pacote_id)
-        return self._cobrar(email, valor, pacote=pacote)
+        return self._cobrar(email, valor, pacote=pacote, tipo=tipo)
  
     def exigir_cartao_credito(self, email):
         """RN-06: o usuário precisa ter cartão de crédito cadastrado.
@@ -97,19 +125,43 @@ class PagamentoService:
             )
         return cartao
  
-    def _cobrar(self, email, valor, locacao=None, pacote=None):
+    def exigir_cartao_debito(self, email):
+        """Para pagar no débito o usuário precisa ter cartão de débito cadastrado."""
+        cartao = self.cartao_repo.get_debito_by_email(email)
+        if cartao is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Usuário não possui cartão de débito cadastrado",
+            )
+        return cartao
+
+    def _metodo_de(self, tipo):
+        metodo = self.metodos.get(tipo)
+        if metodo is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Forma de pagamento não suportada",
+            )
+        return metodo
+
+    def _cobrar(self, email, valor, locacao=None, pacote=None,
+                tipo=TipoPagamento.CARTAO_CREDITO):
         self._validar_destino(locacao, pacote)
         self._validar_valor(valor)
-        cartao = self.exigir_cartao_credito(email)
-        # O pagamento nasce PENDENTE; o status final vem do gateway.
+        metodo = self._metodo_de(tipo)
+        # Cartão do tipo certo (400 se faltar); o PIX não usa cartão.
+        buscar_cartao = self._cartao_do_tipo.get(tipo)
+        token = buscar_cartao(email).token if buscar_cartao else None
+        # O pagamento nasce PENDENTE; o status final vem da estratégia.
         pagamento = self.pagamento_repo.create(
             valor=valor,
-            tipo=TipoPagamento.CARTAO_CREDITO,
+            tipo=tipo,
             locacao=locacao,
             pacote=pacote,
-            token_cartao=cartao.token,
+            token_cartao=token,
         )
-        pagamento.status = self.gateway.cobrar(cartao.token, valor)
+        usuario = self.usuario_repo.get_by_email(email)
+        pagamento.status = metodo.processar(pagamento, usuario)
         return pagamento
  
     # --- Cartões (RF-11, RN-06) ---------------------------------------
