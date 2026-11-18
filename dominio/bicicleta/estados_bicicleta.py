@@ -12,6 +12,10 @@ bicicleta, por `bicicleta._mudar_para(...)`.
                                    |                  \\-> EM_MANUTENCAO (se havia bloqueio agendado)
     qualquer estado --enviar_para_manutencao--> EM_MANUTENCAO
     EM_MANUTENCAO --liberar_apos_reparo--> DISPONIVEL (sem avaria pendente)
+
+Eventos que o estado atual não aceita: iniciar_uso() e finalizar_uso() levantam
+ConflitoDeRegra (409); enviar_para_manutencao() em EM_MANUTENCAO e
+liberar_apos_reparo() fora dela são ignorados.
 """
 
 from abc import ABC
@@ -31,14 +35,8 @@ class EstadoBicicleta(ABC):
         raise ConflitoDeRegra("A bicicleta não está disponível para uso")
 
     def finalizar_uso(self, bicicleta) -> bool:
-        """Volta a DISPONIVEL, ou vai para EM_MANUTENCAO se havia bloqueio
-        agendado. Devolve True neste segundo caso."""
-        if bicicleta.bloqueio_pendente:
-            bicicleta.bloqueio_pendente = False
-            bicicleta._mudar_para(StatusBicicleta.EM_MANUTENCAO)
-            return True
-        bicicleta._mudar_para(StatusBicicleta.DISPONIVEL)
-        return False
+        """Só a bicicleta EM_USO termina uma corrida; nos demais estados é erro."""
+        raise ConflitoDeRegra("A bicicleta não está em uso")
 
     def pedir_status_manual(
         self, bicicleta, novo_status: StatusBicicleta, avaria_pendente: Callable[[], bool]
@@ -74,6 +72,16 @@ class Disponivel(EstadoBicicleta):
 
 class EmUso(EstadoBicicleta):
     status = StatusBicicleta.EM_USO
+
+    def finalizar_uso(self, bicicleta) -> bool:
+        """Fim da corrida: volta a DISPONIVEL, ou vai para EM_MANUTENCAO se havia
+        bloqueio agendado (o flag é limpo). Devolve True neste segundo caso."""
+        if bicicleta.bloqueio_pendente:
+            bicicleta.bloqueio_pendente = False
+            bicicleta._mudar_para(StatusBicicleta.EM_MANUTENCAO)
+            return True
+        bicicleta._mudar_para(StatusBicicleta.DISPONIVEL)
+        return False
 
     def pedir_status_manual(
         self, bicicleta, novo_status: StatusBicicleta, avaria_pendente: Callable[[], bool]

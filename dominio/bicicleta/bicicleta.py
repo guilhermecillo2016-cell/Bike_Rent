@@ -89,7 +89,8 @@ class Bicicleta:
         self._estado.iniciar_uso(self)
 
     def finalizar_uso(self) -> bool:
-        """Fim da corrida: volta a DISPONIVEL, ou vai para EM_MANUTENCAO se
+        """Fim da corrida (só aceito com a bicicleta EM_USO; nos outros estados
+        levanta ConflitoDeRegra): volta a DISPONIVEL, ou vai para EM_MANUTENCAO se
         havia bloqueio agendado (que então é limpo). Devolve True nesse
         segundo caso, para o service registrar a auditoria."""
         return self._estado.finalizar_uso(self)
