@@ -1,0 +1,399 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+hide circle
+hide empty members
+
+legend right
+  |= Cor |= Significado |
+  |<back:#DFF0D8>      </back>| Novo |
+  |<back:#FFF3CD>      </back>| Alterado |
+  |<back:#F1F1F1>      </back>| Sem mudança |
+endlegend
+
+' =====================================================================
+' CLASSES SEM MUDANÇA
+' =====================================================================
+class RelatorioAnalitico {
+  -id_relatorio: int
+  -data_geracao: DateTime
+  -receita_total: double
+  -taxa_ociosidade: double
+  -indice_quebras: double
+  +RelatorioAnalitico(inicio: DateTime, fim: DateTime)
+  +consolidarMetricas(): void
+}
+note right of RelatorioAnalitico
+  Calculado sob demanda a partir das locações,
+  pagamentos e avarias; não é persistido.
+end note
+
+class RedistribuicaoFrota {
+  -id_redistribuicao: int
+  -data_hora: DateTime
+  -quantidade_veiculos: int
+  +RedistribuicaoFrota(operador: Usuario, origem: Estacao, destino: Estacao)
+  +adicionarBicicleta(b: Bicicleta): void
+  +executarTransferencia(): void
+}
+note right of RedistribuicaoFrota
+  Implementação prevista para a iteração 3.
+end note
+
+class ReporteAvaria {
+  -id_reporte: int
+  -descricao: String
+  -data_hora: DateTime
+  -status: StatusAvaria
+  +ReporteAvaria(bicicleta: Bicicleta, usuario: Usuario, descricao: String)
+  +resolver(): void
+}
+
+class ComprovanteViagem {
+  -id_comprovante: int
+  -data_emissao: DateTime
+  -resumo_trajeto: String
+  -tarifa_aplicada: double
+  +ComprovanteViagem(locacao: Locacao, pagamento: Pagamento)
+  +gerarExtratoFormatado(): String
+}
+
+' =====================================================================
+' CLASSES ALTERADAS
+' =====================================================================
+class Usuario #FFF3CD {
+  -nome: String
+  -email: String
+  -senha_hash: String
+  -cpf: String
+  -telefone: String
+  -endereco: String
+  -papel: PapelUsuario
+  +Usuario(nome: String, email: String, cpf: String, papel: PapelUsuario)
+  +autenticar(senha: String): boolean
+  +possuiCartaoValido(): boolean
+  +temPacoteMinutosAtivo(): boolean
+  +getPapel(): PapelUsuario
+}
+note right of Usuario
+  O e-mail identifica o usuário (não há id numérico).
+  CPF e e-mail são únicos. Administrador e operador
+  não têm CPF nem telefone.
+end note
+
+class Bicicleta #FFF3CD {
+  -id_bicicleta: int
+  -qr_code: String
+  -status: StatusBicicleta
+  -bloqueio_pendente: boolean
+  +Bicicleta(id_bicicleta: int, qr_code: String)
+  +isAptaParaLocacao(): boolean
+  +setStatus(status: StatusBicicleta): void
+  +getStatus(): StatusBicicleta
+}
+note right of Bicicleta
+  bloqueio_pendente: bloqueio manual pedido enquanto a
+  bicicleta está EM_USO; ao fim da corrida ela vai para
+  EM_MANUTENCAO (UC2, extensão 4a).
+end note
+
+class Locacao #FFF3CD {
+  -id_locacao: int
+  -data_hora_inicio: DateTime
+  -data_hora_fim: DateTime
+  -duracao_minutos: int
+  -minutos_pacote: int
+  -valor_total: double
+  -em_andamento: boolean
+  +Locacao(usuario: Usuario, bicicleta: Bicicleta, origem: Estacao)
+  +encerrarLocacao(destino: Estacao): void
+  +calcularValorTrajeto(): double
+  +abaterSaldoPacote(minutosDisponiveis: int): int
+  +isEmAndamento(): boolean
+}
+note right of Locacao
+  **Tarifa absorvida pela Locacao** (RN-04): sem entidade própria.
+  valor = VALOR_BASE + minutos_a_cobrar x VALOR_POR_MINUTO
+  Minuto iniciado conta como minuto cheio.
+  Cobra só o excedente, depois de abater o pacote:
+  minutos_pacote = minutos cobertos pelo pacote;
+  valor_total = valor do excedente.
+end note
+
+class Estacao #FFF3CD {
+  -id_estacao: int
+  -nome: String
+  -endereco: String
+  -capacidade_total: int
+  -/vagas_disponiveis: int
+  -status: StatusEstacao
+  +Estacao(id_estacao: int, nome: String, endereco: String, capacidade: int)
+  +possuiVagaLivre(): boolean
+  +possuiBicicletaDisponivel(): boolean
+  +alocarBicicleta(b: Bicicleta): void
+  +removerBicicleta(b: Bicicleta): void
+  +setStatus(status: StatusEstacao): void
+}
+note right of Estacao
+  RN-03: estação BLOQUEADA não recebe nem libera
+  bicicletas; não é opção de retirada/devolução.
+  vagas_disponiveis é derivado: capacidade_total menos
+  as bicicletas que estão na estação (não é guardado).
+end note
+
+class Geolocalizacao #FFF3CD {
+  -latitude: double
+  -longitude: double
+  +Geolocalizacao(lat: double, lng: double)
+  +getCoordenadas(): String
+  +calcularDistanciaEmMetros(destino: Geolocalizacao): double
+}
+note bottom of Geolocalizacao
+  Objeto de valor: no banco vira as colunas
+  latitude e longitude da estação.
+  Haversine (raio médio 6.371.008,8 m).
+  Latitude em [-90, 90]; longitude em [-180, 180].
+end note
+
+class PacoteMinutos #FFF3CD {
+  -id_pacote: int
+  -minutos_totais: int
+  -minutos_restantes: int
+  -data_validade: DateTime
+  -ativo: boolean
+  +PacoteMinutos(minutos: int, dataValidade: DateTime)
+}
+note right of PacoteMinutos
+  Nasce **inativo**: não conta no saldo.
+  Só se o pagamento for APROVADO ele é ativado
+  (ativo = true) com todos os minutos (RF-10).
+  Vencido ou zerado: ativo = false.
+  Validade e abatimento ficam no PacoteService.
+end note
+
+class Pagamento #FFF3CD {
+  -id_pagamento: int
+  -valor: double
+  -tipo: TipoPagamento
+  -status: StatusPagamento
+  -data_hora: DateTime
+  -token_cartao: String
+  -qr_code_pix: String
+  +Pagamento(valor: double, tipo: TipoPagamento)
+  +verificarStatusPix(): boolean
+}
+note right of Pagamento
+  Paga uma corrida **OU** a compra de um pacote:
+  exatamente um entre Locacao e PacoteMinutos ({xor}),
+  validado no PagamentoService.
+  Nasce PENDENTE até o gateway responder.
+  PIX só na iteração 3.
+end note
+
+' =====================================================================
+' CLASSES NOVAS
+' =====================================================================
+class Cartao #DFF0D8 {
+  -token: String
+  -tipo: String
+  -bandeira: String
+  -ultimos_digitos: String
+  -nome_titular: String
+  -validade: String
+  -apelido: String
+}
+note bottom of Cartao
+  Cartão tokenizado (repository_cartao).
+  Nunca guarda número completo nem CVV.
+  tipo: crédito ou débito. validade no formato MM/AA.
+  RN-06: para alugar, o usuário precisa de cartão de crédito.
+end note
+
+class EventoAuditoria #DFF0D8 {
+  -id_evento: int
+  -data_hora: DateTime
+  -usuario_email: String
+  -tipo_entidade: String
+  -entidade_id: int
+  -status_anterior: String
+  -status_novo: String
+}
+note bottom of EventoAuditoria
+  Histórico de alterações manuais de status (UC2, RF-15).
+  tipo_entidade: BICICLETA ou ESTACAO.
+  usuario_email: quem alterou, ou "sistema" quando o
+  bloqueio agendado é aplicado ao fim da corrida.
+end note
+
+class ItemCatalogo <<constante>> #DFF0D8 {
+  -id: int
+  -minutos: int
+  -preco: double
+  -validade_dias: int
+}
+note bottom of ItemCatalogo
+  Catálogo fixo: 30, 60 e 120 minutos.
+  Não é entidade persistida.
+end note
+
+class PagamentoService <<serviço>> #DFF0D8 {
+  +cobrarCorrida(email: String, valor: double, locacao_id: int): Pagamento
+  +cobrarPacote(email: String, valor: double, pacote_id: int): Pagamento
+  +exigirCartaoCredito(email: String): Cartao
+  +vincularCartao(email: String, dados: DadosCartao): Cartao
+  +listarCartoes(email: String): List<Cartao>
+  +removerCartao(email: String, token: String): boolean
+  +obterPagamento(id: int): Pagamento
+  +listarPagamentos(): List<Pagamento>
+}
+note bottom of PagamentoService
+  Recusa não lança exceção: devolve o Pagamento RECUSADO.
+  DadosCartao: número, titular, validade, CVV e tipo
+  (só o token e os 4 últimos dígitos são guardados).
+end note
+
+class GatewayPagamento <<serviço técnico simulado>> #DFF0D8 {
+  +cobrar(token: String, valor: double): StatusPagamento
+}
+
+class PacoteService <<serviço>> #DFF0D8 {
+  +listarCatalogo(): List<ItemCatalogo>
+  +comprarPacote(email: String, item_id: int): Pair<PacoteMinutos, Pagamento>
+  +listarPacotes(email: String): List<PacoteMinutos>
+  +saldoMinutos(email: String): int
+  +abaterMinutos(email: String, minutos: int): int
+}
+note bottom of PacoteService
+  abaterMinutos consome primeiro o pacote que vence antes e
+  devolve quantos minutos conseguiu abater (RN-05).
+end note
+
+class ConsultaEstacoes <<serviço>> #DFF0D8 {
+  +listarEstacoes(lat: double, lng: double): List<EstacaoDisponibilidade>
+  +proximasComVaga(lat: double, lng: double, n: int): List<EstacaoDisponibilidade>
+}
+
+class EstacaoDisponibilidade <<DTO>> #DFF0D8 {
+  -id: int
+  -nome: String
+  -endereco: String
+  -status: StatusEstacao
+  -bicicletas_disponiveis: int
+  -vagas_livres: int
+  -latitude: double
+  -longitude: double
+  -distancia_metros: double
+}
+
+class Mapas <<serviço técnico>> #DFF0D8 {
+  +estacoesMaisProximas(lat: double, lng: double, n: int): List<(Estacao, double)>
+}
+
+note as NotaServicos
+  Os demais serviços de domínio (Locação, Bicicleta, Estação, Avaria,
+  Auditoria, Relatório, Comprovante e Usuário) seguem o mesmo padrão:
+  regras de negócio sobre as entidades, com persistência pelos
+  repositórios. Só aparecem aqui os que têm colaboração relevante.
+end note
+
+' =====================================================================
+' ENUMERAÇÕES (sem mudança)
+' =====================================================================
+class StatusEstacao {
+  OPERACIONAL
+  BLOQUEADA
+  EM_MANUTENCAO
+}
+class StatusBicicleta {
+  DISPONIVEL
+  EM_USO
+  EM_MANUTENCAO
+  BLOQUEADA
+}
+class StatusAvaria {
+  PENDENTE
+  EM_REPARO
+  RESOLVIDO
+}
+class PapelUsuario {
+  CICLISTA
+  OPERADOR_CAMPO
+  ADMINISTRADOR
+}
+class TipoPagamento {
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  PIX
+}
+class StatusPagamento {
+  PENDENTE
+  APROVADO
+  RECUSADO
+}
+
+' =====================================================================
+' ASSOCIAÇÕES (sem mudança)
+' =====================================================================
+RelatorioAnalitico ..> Locacao : analisa
+RelatorioAnalitico ..> ReporteAvaria : analisa
+RelatorioAnalitico ..> Bicicleta : analisa
+
+Locacao "*" --> "1" Estacao : estacao_origem
+Locacao "*" --> "0..1" Estacao : estacao_destino
+Locacao "*" --> "1" Usuario : usuario
+Locacao "*" --> "1" Bicicleta : bicicleta
+Locacao "1" -- "0..1" ComprovanteViagem : gera
+
+RedistribuicaoFrota "*" --> "1" Estacao : origem
+RedistribuicaoFrota "*" --> "1" Estacao : destino
+RedistribuicaoFrota "*" --> "1" Usuario : executado_por
+RedistribuicaoFrota "*" o-- "1..*" Bicicleta : transporta
+
+ReporteAvaria "*" --> "1" Usuario : reportado_por
+ReporteAvaria "*" --> "1" Bicicleta : relata_falha_em
+
+Estacao "1" -- "*" Bicicleta : bicicletas
+Estacao "1" *-- "1" Geolocalizacao : localizacao
+
+Usuario "1" o-- "*" PacoteMinutos : possui_pacotes
+
+Estacao ..> StatusEstacao
+Bicicleta ..> StatusBicicleta
+ReporteAvaria ..> StatusAvaria
+Usuario ..> PapelUsuario
+Pagamento ..> TipoPagamento
+Pagamento ..> StatusPagamento
+
+' =====================================================================
+' ASSOCIAÇÕES ALTERADAS: Pagamento paga corrida XOR pacote
+' =====================================================================
+Locacao "0..1" -- "0..1" Pagamento : faturada_por {xor}
+PacoteMinutos "0..1" -- "0..1" Pagamento : adquirido_por {xor}
+
+' =====================================================================
+' ASSOCIAÇÕES NOVAS
+' =====================================================================
+Usuario "1" -- "*" Cartao : possui_cartoes
+Pagamento "*" ..> "0..1" Cartao : token_cartao
+
+EventoAuditoria ..> Bicicleta : audita
+EventoAuditoria ..> Estacao : audita
+
+PagamentoService ..> Pagamento : cria
+PagamentoService ..> Cartao : usa cartão de crédito
+PagamentoService ..> GatewayPagamento : cobra (RF-12)
+
+PacoteService ..> ItemCatalogo : escolhe item
+PacoteService ..> PacoteMinutos : cria e ativa
+PacoteService ..> PagamentoService : cobrarPacote
+
+Locacao ..> PacoteService : abate minutos (RN-05)
+Locacao ..> PagamentoService : cobra excedente (RF-12)
+
+ConsultaEstacoes ..> Mapas : ordena por distância
+ConsultaEstacoes ..> EstacaoDisponibilidade : devolve
+ConsultaEstacoes ..> Estacao : consulta
+Mapas ..> Estacao
+Mapas ..> Geolocalizacao : Haversine
+
+@enduml

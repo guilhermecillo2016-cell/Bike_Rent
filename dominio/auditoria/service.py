@@ -10,10 +10,10 @@ from typing import Literal
 
 from dominio.auditoria.schemas import EventoAuditoriaPublic
 from servicos_tecnicos.banco_de_dados import repository_auditoria as repo
-from servicos_tecnicos.banco_de_dados.models import EventoAuditoriaORM
+from dominio.auditoria.evento_auditoria import EventoAuditoria
 
 
-def to_public(evento: EventoAuditoriaORM) -> EventoAuditoriaPublic:
+def to_public(evento: EventoAuditoria) -> EventoAuditoriaPublic:
     return EventoAuditoriaPublic(
         id=evento.id,
         usuario_email=evento.usuario_email,
@@ -31,13 +31,13 @@ def registrar(
     entidade_id: int,
     status_anterior: str,
     status_novo: str,
-) -> EventoAuditoriaORM:
+) -> EventoAuditoria:
     """Grava um evento de alteração de status."""
     return repo.create(
         usuario_email, tipo_entidade, entidade_id, status_anterior, status_novo
     )
 
 
-def listar() -> list[EventoAuditoriaORM]:
+def listar() -> list[EventoAuditoria]:
     """Todos os eventos, do mais recente para o mais antigo."""
     return sorted(repo.list_all(), key=lambda e: e.id, reverse=True)

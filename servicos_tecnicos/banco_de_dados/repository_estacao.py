@@ -6,26 +6,23 @@ Armazenamento em memória das estações cadastradas pelo administrador.
 
 from typing import Optional
 
+from dominio.geolocalizacao.geolocalizacao import Geolocalizacao
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import EstacaoORM
+from dominio.estacao.estacao import Estacao
 
 
-def create(nome: str, endereco: str, latitude: float, longitude: float, capacidade_total: int) -> EstacaoORM:
-    estacao = EstacaoORM(
-        id=memoria.proximo_id("estacoes"),
-        nome=nome,
-        endereco=endereco,
-        latitude=latitude,
-        longitude=longitude,
-        capacidade_total=capacidade_total,
+def create(nome: str, endereco: str, latitude: float, longitude: float, capacidade_total: int) -> Estacao:
+    estacao = Estacao(
+        memoria.proximo_id("estacoes"), nome, endereco, capacidade_total,
+        localizacao=Geolocalizacao(latitude, longitude),
     )
-    memoria.estacoes[estacao.id] = estacao
+    memoria.estacoes[estacao.id_estacao] = estacao
     return estacao
 
 
-def list_all() -> list[EstacaoORM]:
+def list_all() -> list[Estacao]:
     return list(memoria.estacoes.values())
 
 
-def get_by_id(estacao_id: int) -> Optional[EstacaoORM]:
+def get_by_id(estacao_id: int) -> Optional[Estacao]:
     return memoria.estacoes.get(estacao_id)

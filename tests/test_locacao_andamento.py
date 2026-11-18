@@ -4,9 +4,10 @@ import pytest
 from fastapi import HTTPException
 
 from dominio.locacao import service as locacao_service, tarifa
-from servicos_tecnicos.banco_de_dados import memoria, repository_locacao
+from servicos_tecnicos.banco_de_dados import memoria, repository_bicicleta, repository_locacao
 from servicos_tecnicos.banco_de_dados import repository_pacote
 from dominio.estacao import service as estacao_service
+from dominio.usuario.usuario import Usuario
 from dominio.estacao.schemas import EstacaoCreate
 
 EMAIL = "c@x.com"
@@ -16,20 +17,23 @@ EMAIL = "c@x.com"
 def _limpa():
     for d in (memoria.estacoes, memoria.bicicletas, memoria.locacoes, memoria.pacotes):
         d.clear()
+    memoria.usuarios[EMAIL] = Usuario("Fulano", EMAIL)
     yield
+    memoria.usuarios.pop(EMAIL, None)
 
 
 def _locacao_iniciada_ha(segundos):
     est = estacao_service.criar_estacao(
         EstacaoCreate(nome="E1", endereco="Rua A", latitude=0, longitude=0, capacidade_total=5)
     )
-    loc = repository_locacao.create(EMAIL, bicicleta_id=1, estacao_origem_id=est.id)
+    bike = repository_bicicleta.create(est)
+    loc = repository_locacao.create(memoria.usuarios[EMAIL], bike, est)
     loc.data_hora_inicio = datetime.now() - timedelta(seconds=segundos)
     return loc
 
 
 def _pacote(minutos, ativo=True, validade_dias=7):
-    p = repository_pacote.create(EMAIL, minutos, datetime.now() + timedelta(days=validade_dias))
+    p = repository_pacote.create(memoria.usuarios[EMAIL], minutos, datetime.now() + timedelta(days=validade_dias))
     p.ativo = ativo
     return p
 

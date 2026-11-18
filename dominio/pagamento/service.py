@@ -13,12 +13,22 @@ from fastapi import HTTPException, status
 
 from servicos_tecnicos.pagamentos import tokenizador
 from servicos_tecnicos.banco_de_dados import repository_cartao as repo
-from servicos_tecnicos.banco_de_dados import repository_pagamento
-from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
-from servicos_tecnicos.banco_de_dados.models import CartaoORM
-from servicos_tecnicos.banco_de_dados.models import PagamentoORM
+from servicos_tecnicos.banco_de_dados import (
+    repository_locacao,
+    repository_pacote,
+    repository_pagamento,
+    repository_usuario,
+)
+from servicos_tecnicos.banco_de_dados.enums import StatusPagamento, TipoPagamento
+from dominio.pagamento.cartao import Cartao
+from dominio.pagamento.metodos_pagamento import (
+    PagamentoCartaoCredito,
+    PagamentoCartaoDebito,
+    PagamentoPix,
+)
+from dominio.pagamento.pagamento import Pagamento
 from dominio.pagamento.schemas import CartaoCreate
-from servicos_tecnicos.pagamentos import gateway as gateway_simulado
+from servicos_tecnicos.pagamentos.gateway import GatewayPagamento
 
 _TIPOS_CARTAO = {
     "credito" : TipoPagamento.CARTAO_CREDITO,
@@ -44,15 +54,34 @@ class PagamentoService:
  
     Os repositories e o gateway são módulos/objetos injetáveis; por padrão usa
     os repositories em memória e o gateway simulado.
+
+    A forma de pagamento é uma estratégia (padrão Strategy): `metodos` mapeia
+    cada TipoPagamento para o MetodoPagamento que o processa.
     """
  
     def __init__(
-        self, pagamento_repo=None, cartao_repo=None, locacao_repo=None, gateway=None
+        self, pagamento_repo=None, cartao_repo=None, locacao_repo=None,
+        pacote_repo=None, gateway=None, usuario_repo=None,
     ):
         self.pagamento_repo = pagamento_repo or repository_pagamento
         self.cartao_repo = cartao_repo or repo
-        self.locacao_repo = locacao_repo  # opcional: sem ele, não checa a locação
-        self.gateway = gateway or gateway_simulado
+        self.locacao_repo = locacao_repo or repository_locacao
+        self.pacote_repo = pacote_repo or repository_pacote
+        self.gateway = gateway or GatewayPagamento()
+        self.usuario_repo = usuario_repo or repository_usuario
+        self.metodos = {
+            metodo.tipo: metodo
+            for metodo in (
+                PagamentoCartaoCredito(self.gateway),
+                PagamentoCartaoDebito(self.gateway),
+                PagamentoPix(),
+            )
+        }
+        # Qual cartão cada tipo exige (o PIX não usa cartão).
+        self._cartao_do_tipo = {
+            TipoPagamento.CARTAO_CREDITO: self.exigir_cartao_credito,
+            TipoPagamento.CARTAO_DEBITO: self.exigir_cartao_debito,
+        }
  
     # --- Consultas ----------------------------------------------------
     def obter_pagamento(self, pagamento_id):
@@ -71,16 +100,17 @@ class PagamentoService:
     def cobrar_corrida(self, email, valor, locacao_id):
         """Cobra a corrida no cartão de crédito vinculado ao usuário.
  
-        Recusa NÃO lança exceção: devolve o PagamentoORM com status RECUSADO
+        Recusa NÃO lança exceção: devolve o Pagamento com status RECUSADO
         para a locação decidir o que fazer.
         """
-        self._validar_locacao(locacao_id)
-        return self._cobrar(email, valor, locacao_id=locacao_id)
+        locacao = self._obter_locacao(locacao_id)
+        return self._cobrar(email, valor, locacao=locacao)
  
-    def cobrar_pacote(self, email, valor, pacote_id):
-        """Cobra a compra de um pacote de minutos (mesmo gateway da corrida)."""
-        self._validar_pacote(pacote_id)
-        return self._cobrar(email, valor, pacote_id=pacote_id)
+    def cobrar_pacote(self, email, valor, pacote_id, tipo=TipoPagamento.CARTAO_CREDITO):
+        """Cobra a compra de um pacote de minutos (mesmo gateway da corrida).
+        `tipo` escolhe a estratégia; o padrão é o cartão de crédito."""
+        pacote = self._obter_pacote(pacote_id)
+        return self._cobrar(email, valor, pacote=pacote, tipo=tipo)
  
     def exigir_cartao_credito(self, email):
         """RN-06: o usuário precisa ter cartão de crédito cadastrado.
@@ -95,26 +125,102 @@ class PagamentoService:
             )
         return cartao
  
-    def _cobrar(self, email, valor, locacao_id=None, pacote_id=None):
-        self._validar_destino(locacao_id, pacote_id)
+    def exigir_cartao_debito(self, email):
+        """Para pagar no débito o usuário precisa ter cartão de débito cadastrado."""
+        cartao = self.cartao_repo.get_debito_by_email(email)
+        if cartao is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Usuário não possui cartão de débito cadastrado",
+            )
+        return cartao
+
+    def _metodo_de(self, tipo):
+        metodo = self.metodos.get(tipo)
+        if metodo is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Forma de pagamento não suportada",
+            )
+        return metodo
+
+    def _cobrar(self, email, valor, locacao=None, pacote=None,
+                tipo=TipoPagamento.CARTAO_CREDITO):
+        self._validar_destino(locacao, pacote)
         self._validar_valor(valor)
-        cartao = self.exigir_cartao_credito(email)
-        # O pagamento nasce PENDENTE; o status final vem do gateway.
+        metodo = self._metodo_de(tipo)
+        # Cartão do tipo certo (400 se faltar); o PIX não usa cartão.
+        buscar_cartao = self._cartao_do_tipo.get(tipo)
+        token = buscar_cartao(email).token if buscar_cartao else None
+        # O pagamento nasce PENDENTE; o status final vem da estratégia.
         pagamento = self.pagamento_repo.create(
             valor=valor,
-            tipo=TipoPagamento.CARTAO_CREDITO,
-            locacao_id=locacao_id,
-            pacote_id=pacote_id,
-            token_cartao=cartao.token,
+            tipo=tipo,
+            locacao=locacao,
+            pacote=pacote,
+            token_cartao=token,
         )
-        pagamento.status = self.gateway.cobrar(cartao.token, valor)
+        usuario = self.usuario_repo.get_by_email(email)
+        resultado = metodo.processar(pagamento, usuario)
+        self._aplicar_resultado(pagamento, resultado)
         return pagamento
+
+    @staticmethod
+    def _aplicar_resultado(pagamento, resultado):
+        """Aplica o resultado da estratégia pelas transições do próprio
+        Pagamento (nunca atribui `status` direto). PENDENTE: nada a fazer."""
+        transicoes = {
+            StatusPagamento.APROVADO: pagamento.aprovar,
+            StatusPagamento.RECUSADO: pagamento.recusar,
+            StatusPagamento.CANCELADO: pagamento.cancelar,
+        }
+        transicao = transicoes.get(resultado)
+        if transicao is not None:
+            transicao()
  
+    # --- Cartões (RF-11, RN-06) ---------------------------------------
+    def vincular_cartao(self, email_usuario: str, dados: CartaoCreate) -> Cartao:
+        """"if not _numero_valido_luhn(dados.numero_cartao):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Número de cartão inválido",
+            )"""
+        if not _validade_no_futuro(dados.validade):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cartão vencido ou validade inválida (use o formato MM/AA)",
+            )
+
+        resultado = tokenizador.tokenizar(dados.numero_cartao)
+
+        cartao = Cartao(
+            token=resultado["token"],
+            ultimos_digitos=resultado["ultimos_digitos"],
+            bandeira=resultado["bandeira"],
+            nome_titular=dados.nome_titular,
+            validade=dados.validade,
+            tipo=_normalizar_tipo(dados.tipo),
+            apelido=dados.apelido
+        )
+        return self.cartao_repo.add_cartao(email_usuario, cartao)
+
+    def listar_cartoes(self, email_usuario: str) -> list[Cartao]:
+        return self.cartao_repo.list_cartoes(email_usuario)
+
+    def remover_cartao(self, email_usuario: str, token: str) -> bool:
+        """Falso se não achou o cartão ou se ele não é do usuário; senão
+        remove e devolve verdadeiro."""
+        cartao = self.cartao_repo.get_cartao(email_usuario, token)
+        if not cartao:
+            return False
+        self.cartao_repo.remover_cartao(email_usuario, cartao)
+        return True
+
     # --- Validações ---------------------------------------------------
     @staticmethod
-    def _validar_destino(locacao_id, pacote_id):
-        """XOR: exatamente um entre locacao_id e pacote_id."""
-        if (locacao_id is None) == (pacote_id is None):
+    def _validar_destino(locacao, pacote):
+        """XOR: exatamente um entre locação e pacote (ids ou objetos)."""
+        if (locacao is None) == (pacote is None):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Informe exatamente um entre locacao_id e pacote_id",
@@ -135,20 +241,30 @@ class PagamentoService:
                 detail="O valor deve ser maior que zero",
             )
  
-    def _validar_locacao(self, locacao_id):
-        if locacao_id is None or self.locacao_repo is None:
-            return
-        if self.locacao_repo.get_by_id(locacao_id) is None:
+    def _obter_locacao(self, locacao_id):
+        """A locação paga (404 se não existe). None se não veio id."""
+        if locacao_id is None:
+            return None
+        locacao = self.locacao_repo.get_by_id(locacao_id)
+        if locacao is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Locação não encontrada",
             )
- 
-    def _validar_pacote(self, pacote_id):
-        # TODO [C8]: checar existência do pacote (404 "Pacote não encontrado")
-        # quando o repository de pacote de minutos existir (iteração 2).
-        # Por ora, só vale o XOR.
-        return
+        return locacao
+
+    def _obter_pacote(self, pacote_id):
+        """O pacote pago (404 se não existe). None se não veio id."""
+        if pacote_id is None:
+            return None
+        pacote = self.pacote_repo.get_by_id(pacote_id)
+        if pacote is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Pacote não encontrado",
+            )
+        return pacote
+
 
 def _numero_valido_luhn(numero_cartao: str) -> bool:
     """Algoritmo de Luhn: validação padrão de números de cartão."""
@@ -177,40 +293,21 @@ def _validade_no_futuro(validade: str) -> bool:
         return False
 
 
-def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> CartaoORM:
-    """"if not _numero_valido_luhn(dados.numero_cartao):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Número de cartão inválido",
-        )"""
-    if not _validade_no_futuro(dados.validade):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cartão vencido ou validade inválida (use o formato MM/AA)",
-        )
-
-    resultado = tokenizador.tokenizar(dados.numero_cartao)
-
-    cartao = CartaoORM(
-        token=resultado["token"],
-        ultimos_digitos=resultado["ultimos_digitos"],
-        bandeira=resultado["bandeira"],
-        nome_titular=dados.nome_titular,
-        validade=dados.validade,
-        tipo=_normalizar_tipo(dados.tipo),
-        apelido=dados.apelido
-        
-    )
-    return repo.add_cartao(email_usuario, cartao)
 
 
-def listar_cartoes(email_usuario: str) -> list[CartaoORM]:
-    return repo.list_cartoes(email_usuario)
-#Retorna falso se não encontrou o cartão ou se não pertence ao usuário, caso contrário remove e retorna verdadeiro
+# ----------------------------------------------------------------------
+# Fachada de módulo (mesmas assinaturas de sempre): quem faz o trabalho é
+# a classe PagamentoService.
+# ----------------------------------------------------------------------
+def vincular_cartao(email_usuario: str, dados: CartaoCreate) -> Cartao:
+    return PagamentoService().vincular_cartao(email_usuario, dados)
+
+
+def listar_cartoes(email_usuario: str) -> list[Cartao]:
+    return PagamentoService().listar_cartoes(email_usuario)
+
+
+# Retorna falso se não encontrou o cartão ou se não pertence ao usuário,
+# caso contrário remove e retorna verdadeiro
 def remover_cartao(email_usuario: str, token: str) -> bool:
-    cartao = repo.get_cartao(email_usuario, token)
-    if not cartao:
-        return False
-    repo.remover_cartao(email_usuario, cartao)
-    return True
-
+    return PagamentoService().remover_cartao(email_usuario, token)

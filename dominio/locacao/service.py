@@ -12,12 +12,12 @@ from typing import Optional
 
 from dominio.bicicleta import service as bicicleta_service
 from dominio.estacao import service as estacao_service
+from dominio.usuario import service as usuario_service
 
 from dominio.pagamento import service as pagamento_service
 from dominio.pacote import service as pacote_service
 
 from dominio.locacao.schemas import LocacaoPublic, LocacaoAndamento, LocacaoEncerrada
-from dominio.locacao import tarifa
 
 from dominio.avaria import service as avaria_service
 
@@ -25,7 +25,7 @@ from dominio.comprovante import service as comprovante_service
 
 from servicos_tecnicos.banco_de_dados import repository_locacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao, StatusPagamento
-from servicos_tecnicos.banco_de_dados.models import LocacaoORM
+from dominio.locacao.locacao import Locacao
 from servicos_tecnicos.iot import ErroTrava, obter_trava
 
 
@@ -38,7 +38,7 @@ class EstacaoDestinoIndisponivel(Exception):
         self.sugestoes = sugestoes
 
 
-def to_public(locacao: LocacaoORM) -> LocacaoPublic:
+def to_public(locacao: Locacao) -> LocacaoPublic:
     return LocacaoPublic(
         id=locacao.id,
         bicicleta_id=locacao.bicicleta_id,
@@ -48,13 +48,15 @@ def to_public(locacao: LocacaoORM) -> LocacaoPublic:
     )
 
 
-def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
+def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
     """Inicia a corrida. Só cria a locação DEPOIS da trava confirmar.
 
     409 corrida já ativa / bicicleta sem estação ou estação inoperante;
     400 sem cartão; 404 QR inexistente; BicicletaIndisponivel se inapta;
     503 se a trava não abriu (nada é alterado).
     """
+    usuario = usuario_service.obter_usuario(usuario_email)
+
     if repo.get_ativa_by_usuario(usuario_email) is not None:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
@@ -74,7 +76,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
             status_code=http.HTTP_409_CONFLICT,
             detail="A bicicleta não está em nenhuma estação",
         )
-    estacao = estacao_service.obter_estacao(bicicleta.estacao_id)
+    estacao = bicicleta.estacao
     if estacao.status != StatusEstacao.OPERACIONAL:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
@@ -93,12 +95,12 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> LocacaoORM:
         )
 
     # Trava confirmada: agora sim a contagem começa (relógio do servidor).
-    locacao = repo.create(usuario_email, bicicleta.id, bicicleta.estacao_id)
+    locacao = repo.create(usuario, bicicleta, estacao)
     estacao_service.remover_bicicleta(bicicleta.id)  # estacao_id = None
-    bicicleta_service.set_status(bicicleta.id, StatusBicicleta.EM_USO)
+    bicicleta.iniciar_uso()
     return locacao
 
-def obter_locacao_ativa(user_email: str) -> LocacaoORM:
+def obter_locacao_ativa(user_email: str) -> Locacao:
     locacao = repo.get_ativa_by_usuario(user_email)
     if locacao is None:
         raise HTTPException(
@@ -107,16 +109,16 @@ def obter_locacao_ativa(user_email: str) -> LocacaoORM:
         )
     return locacao
 
-def calcular_andamento(locacao: LocacaoORM, agora: Optional[datetime] = None) -> LocacaoAndamento:
+def calcular_andamento(locacao: Locacao, agora: Optional[datetime] = None) -> LocacaoAndamento:
     agora = agora or datetime.now()
-    segundos = max(0, int((agora - locacao.data_hora_inicio).total_seconds()))
-    minutos = tarifa.minutos_iniciados(segundos)
+    segundos = locacao.segundos_decorridos(agora)
+    minutos = locacao.minutos_decorridos(agora)
 
     saldo = pacote_service.saldo_minutos(locacao.usuario_email)
-    abatidos = min(minutos, saldo)
-    custo = tarifa.calcular_valor(minutos - abatidos)
+    abatidos = locacao.abater_saldo_pacote(saldo, agora)
+    custo = locacao.calcular_valor_trajeto(abatidos, agora)
 
-    estacao = estacao_service.obter_estacao(locacao.estacao_origem_id)
+    estacao = locacao.estacao_origem
 
     return LocacaoAndamento(
         locacao_id=locacao.id,
@@ -183,18 +185,13 @@ def encerrar_locacao(
 
     # 4) Tarifa: abate o pacote e cobra só o excedente (RN-04/RN-05)
     fim = agora or datetime.now()
-    segundos = max(0, int((fim - locacao.data_hora_inicio).total_seconds()))
-    minutos = tarifa.minutos_iniciados(segundos)
+    segundos = locacao.segundos_decorridos(fim)
+    minutos = locacao.minutos_decorridos(fim)
     abatidos = pacote_service.abater_minutos(usuario_email, minutos)
-    valor = tarifa.calcular_valor(minutos - abatidos)
 
     # 5) Fecha a locação ANTES de cobrar
-    locacao.estacao_destino_id = destino.id
-    locacao.data_hora_fim = fim
-    locacao.duracao_minutos = minutos
-    locacao.minutos_pacote = abatidos
-    locacao.valor_total = valor
-    locacao.em_andamento = False
+    locacao.encerrar_locacao(destino, abatidos, fim)
+    valor = locacao.valor_total
 
     # 6) Cobrança do excedente (extensão 9-10a: valor 0 -> sem cobrança)
     pagamento = None
@@ -208,8 +205,7 @@ def encerrar_locacao(
 
     pendente = valor > 0 and (pagamento is None or pagamento.status != StatusPagamento.APROVADO)
 
-    origem = estacao_service.obter_estacao(locacao.estacao_origem_id)
-    comprovante = comprovante_service.emitir(locacao, origem, destino, pagamento)
+    comprovante = comprovante_service.emitir(locacao, pagamento)
 
     return LocacaoEncerrada(
         locacao_id=locacao.id,

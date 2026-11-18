@@ -10,7 +10,7 @@ from datetime import datetime
 from typing import Literal, Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import EventoAuditoriaORM
+from dominio.auditoria.evento_auditoria import EventoAuditoria
 
 
 def create(
@@ -19,8 +19,8 @@ def create(
         entidade_id: int,
         status_anterior: str,
         status_novo: str,
-    ) -> EventoAuditoriaORM:
-    auditoria = EventoAuditoriaORM(
+    ) -> EventoAuditoria:
+    auditoria = EventoAuditoria(
         id=memoria.proximo_id("eventos_auditoria"),
         data_hora=datetime.now(),
         usuario_email=usuario_email,
@@ -33,9 +33,9 @@ def create(
     return auditoria
 
 
-def get_by_id(auditoria_id: int) -> Optional[EventoAuditoriaORM]:
+def get_by_id(auditoria_id: int) -> Optional[EventoAuditoria]:
     return memoria.eventos_auditoria.get(auditoria_id)
 
 
-def list_all() -> list[EventoAuditoriaORM]:
+def list_all() -> list[EventoAuditoria]:
     return list(memoria.eventos_auditoria.values())

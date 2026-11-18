@@ -8,30 +8,27 @@ A validação de faixa de latitude/longitude e de capacidade > 0 já
 acontece no schema (EstacaoCreate); aqui ficam regras adicionais de
 negócio.
 """
-from math import asin, cos, radians, sin, sqrt
-
 from fastapi import HTTPException, status as http
 
 from dominio.auditoria import service as auditoria_service
 from servicos_tecnicos.banco_de_dados import repository_bicicleta
 from servicos_tecnicos.banco_de_dados import repository_estacao as repo
 from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
-from servicos_tecnicos.banco_de_dados.models import BicicletaORM, EstacaoORM
+from dominio.bicicleta.bicicleta import Bicicleta
+from dominio.estacao.estacao import Estacao
 from dominio.estacao.schemas import EstacaoCreate, EstacaoPublic
 
 
-def vagas_disponiveis(estacao: EstacaoORM) -> int:
-    """Vagas livres = capacidade - bicicletas cujo estacao_id é esta estação."""
-    ocupadas = len(repository_bicicleta.list_by_estacao(estacao.id))
-    return estacao.capacidade_total - ocupadas
+def vagas_disponiveis(estacao: Estacao) -> int:
+    """Vagas livres = capacidade - bicicletas que estão na estação."""
+    return estacao.vagas_disponiveis
 
 
-def bicicletas_disponiveis(estacao: EstacaoORM) -> int:
-    bicicletas = repository_bicicleta.list_by_estacao(estacao.id)
-    return sum(1 for b in bicicletas if b.apta_para_locacao())
+def bicicletas_disponiveis(estacao: Estacao) -> int:
+    return estacao.quantidade_bicicletas_disponiveis()
 
 
-def to_public(estacao: EstacaoORM) -> EstacaoPublic:
+def to_public(estacao: Estacao) -> EstacaoPublic:
     return EstacaoPublic(
         id=estacao.id,
         nome=estacao.nome,
@@ -45,7 +42,7 @@ def to_public(estacao: EstacaoORM) -> EstacaoPublic:
     )
 
 
-def obter_estacao(estacao_id: int) -> EstacaoORM:
+def obter_estacao(estacao_id: int) -> Estacao:
     """Devolve a estação ou levanta 404."""
     estacao = repo.get_by_id(estacao_id)
     if estacao is None:
@@ -56,7 +53,7 @@ def obter_estacao(estacao_id: int) -> EstacaoORM:
     return estacao
 
 
-def exigir_vaga_livre(estacao_id: int) -> EstacaoORM:
+def exigir_vaga_livre(estacao_id: int) -> Estacao:
     """Garante que a estação pode receber uma bicicleta agora.
 
     404 se não existe; 409 se não está OPERACIONAL (bloqueada ou em
@@ -64,32 +61,19 @@ def exigir_vaga_livre(estacao_id: int) -> EstacaoORM:
     Devolve a estação.
     """
     estacao = obter_estacao(estacao_id)
-    if estacao.status != StatusEstacao.OPERACIONAL:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A estação não está operacional",
-        )
-    if vagas_disponiveis(estacao) <= 0:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A estação está lotada",
-        )
+    estacao.exigir_vaga_livre()
     return estacao
 
 
 def possui_vaga_livre(estacao_id: int) -> bool:
     """Versão sim/não de exigir_vaga_livre (404 se a estação não existe)."""
-    estacao = obter_estacao(estacao_id)
-    return (
-        estacao.status == StatusEstacao.OPERACIONAL
-        and vagas_disponiveis(estacao) > 0
-    )
+    return obter_estacao(estacao_id).possui_vaga_livre()
 
 
-def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
+def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> Bicicleta:
     """Estaciona a bicicleta na estação. 404 se algum dos dois não existe;
     409 se a estação não aceita ou se a bicicleta já está em outra."""
-    exigir_vaga_livre(estacao_id)
+    estacao = exigir_vaga_livre(estacao_id)
 
     bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
     if bicicleta is None:
@@ -97,17 +81,12 @@ def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> BicicletaORM:
             status_code=http.HTTP_404_NOT_FOUND,
             detail="Bicicleta não encontrada",
         )
-    if bicicleta.estacao_id is not None:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A bicicleta já está em uma estação",
-        )
 
-    bicicleta.estacao_id = estacao_id
+    estacao.alocar_bicicleta(bicicleta)
     return bicicleta
 
 
-def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
+def remover_bicicleta(bicicleta_id: int) -> Bicicleta:
     """Tira a bicicleta da estação. 404 se ela não existe; 409 se não está em
     nenhuma estação ou se a estação dela não está operacional."""
     bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
@@ -116,26 +95,19 @@ def remover_bicicleta(bicicleta_id: int) -> BicicletaORM:
             status_code=http.HTTP_404_NOT_FOUND,
             detail="Bicicleta não encontrada",
         )
-    if bicicleta.estacao_id is None:
+    if bicicleta.estacao is None:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
             detail="A bicicleta não está em nenhuma estação",
         )
 
-    estacao = obter_estacao(bicicleta.estacao_id)
-    if estacao.status != StatusEstacao.OPERACIONAL:
-        raise HTTPException(
-            status_code=http.HTTP_409_CONFLICT,
-            detail="A estação não está operacional",
-        )
-
-    bicicleta.estacao_id = None
+    bicicleta.estacao.remover_bicicleta(bicicleta)
     return bicicleta
 
 
 def alterar_status_manual(
     estacao_id: int, novo_status: StatusEstacao, usuario_email: str
-) -> EstacaoORM:
+) -> Estacao:
     """Troca o status da estação à mão e registra na auditoria. 404 se não existe."""
     estacao = obter_estacao(estacao_id)
     novo_status = StatusEstacao(novo_status)
@@ -143,14 +115,14 @@ def alterar_status_manual(
         return estacao
 
     anterior = str(estacao.status)
-    estacao.status = novo_status
+    estacao.set_status(novo_status)
     auditoria_service.registrar(
         usuario_email, "ESTACAO", estacao.id, anterior, str(novo_status)
     )
     return estacao
 
 
-def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:
+def criar_estacao(dados: EstacaoCreate) -> Estacao:
     return repo.create(
         nome=dados.nome,
         endereco=dados.endereco,
@@ -160,18 +132,11 @@ def criar_estacao(dados: EstacaoCreate) -> EstacaoORM:
     )
 
 
-def listar_estacoes() -> list[EstacaoORM]:
+def listar_estacoes() -> list[Estacao]:
     return repo.list_all()
 
 
-def _distancia_km(a: EstacaoORM, b: EstacaoORM) -> float:
-    """Distância em linha reta (haversine) entre duas estações."""
-    lat1, lon1, lat2, lon2 = map(radians, (a.latitude, a.longitude, b.latitude, b.longitude))
-    h = sin((lat2 - lat1) / 2) ** 2 + cos(lat1) * cos(lat2) * sin((lon2 - lon1) / 2) ** 2
-    return 6371 * 2 * asin(sqrt(h))
-
-
-def estacoes_proximas_com_vaga(referencia: EstacaoORM, limite: int = 3) -> list[EstacaoORM]:
+def estacoes_proximas_com_vaga(referencia: Estacao, limite: int = 3) -> list[Estacao]:
     """Estações OPERACIONAIS com vaga livre, da mais perto para a mais longe."""
     candidatas = [
         e for e in repo.list_all()
@@ -179,5 +144,5 @@ def estacoes_proximas_com_vaga(referencia: EstacaoORM, limite: int = 3) -> list[
         and e.status == StatusEstacao.OPERACIONAL
         and vagas_disponiveis(e) > 0
     ]
-    candidatas.sort(key=lambda e: _distancia_km(referencia, e))
+    candidatas.sort(key=referencia.distancia_ate_em_metros)
     return candidatas[:limite]

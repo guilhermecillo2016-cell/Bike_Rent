@@ -28,6 +28,8 @@ from datetime import date, datetime
 from fastapi import HTTPException
 
 from apresentacao import adminweb
+from dominio.pacote.pacote_minutos import PacoteMinutos
+from dominio.usuario.usuario import Usuario
 from dominio.relatorio import service
 from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados import repository_avaria
@@ -41,17 +43,21 @@ A, B = 1, 2
 
 
 def _montar():
-    repository_estacao.create("Centro", "Rua A", -27.6, -48.5, 10)
-    repository_estacao.create("Praia", "Rua B", -27.5, -48.4, 10)
+    estacoes = {
+        A: repository_estacao.create("Centro", "Rua A", -27.6, -48.5, 10),
+        B: repository_estacao.create("Praia", "Rua B", -27.5, -48.4, 10),
+    }
     for estacao in (A, A, A, B):
-        repository_bicicleta.create(estacao)  # b1, b2, b3, b4
+        repository_bicicleta.create(estacoes[estacao])  # b1, b2, b3, b4
+
+    cid = Usuario("Cid", "cid@x.com")
 
     def locacao(bicicleta, origem, quando, valor, status, pago_em):
-        l = repository_locacao.create("cid@x.com", bicicleta, origem)
+        l = repository_locacao.create(cid, memoria.bicicletas[bicicleta], memoria.estacoes[origem])
         l.data_hora_inicio = quando
         l.valor_total = valor
         l.em_andamento = False
-        p = repository_pagamento.create(valor, TipoPagamento.CARTAO_CREDITO, locacao_id=l.id)
+        p = repository_pagamento.create(valor, TipoPagamento.CARTAO_CREDITO, locacao=l)
         p.status = status
         p.data_hora = pago_em
 
@@ -64,13 +70,14 @@ def _montar():
     locacao(4, B, datetime(2026, 10, 3, 9, 0), 3.0, aprovado, datetime(2026, 10, 3, 9, 20))
     locacao(3, A, datetime(2026, 9, 15, 12, 0), 8.0, aprovado, datetime(2026, 9, 15, 12, 30))
 
-    pacote = repository_pagamento.create(30.0, TipoPagamento.CARTAO_CREDITO, pacote_id=1)
+    pacote_comprado = PacoteMinutos(30, datetime(2026, 11, 1), usuario=cid, id_pacote=1)
+    pacote = repository_pagamento.create(30.0, TipoPagamento.CARTAO_CREDITO, pacote=pacote_comprado)
     pacote.status = aprovado
     pacote.data_hora = datetime(2026, 10, 2, 10, 0)
 
     for bicicleta, quando in ((1, datetime(2026, 10, 1, 18, 0)), (1, datetime(2026, 10, 2, 8, 0)),
                               (4, datetime(2026, 10, 3, 9, 30)), (3, datetime(2026, 9, 10, 10, 0))):
-        repository_avaria.create("defeito", "cid@x.com", bicicleta).data_hora = quando
+        repository_avaria.create(memoria.bicicletas[bicicleta], cid, "defeito").data_hora = quando
 
 
 OUTUBRO = dict(inicio=date(2026, 10, 1), fim=date(2026, 10, 3))
@@ -211,10 +218,12 @@ class FiltroDeEstacaoTests(RelatorioTestCase):
         self.assertEqual(self.codigo_http(estacao_id=999), 404)
 
     def test_empate_no_pico_fica_com_a_hora_mais_cedo(self):
-        repository_estacao.create("Centro", "Rua A", 0, 0, 5)
-        repository_bicicleta.create(1)
+        centro = repository_estacao.create("Centro", "Rua A", 0, 0, 5)
+        repository_bicicleta.create(centro)
         for hora in (18, 7):
-            repository_locacao.create("cid@x.com", 1, 1).data_hora_inicio = datetime(2026, 10, 1, hora, 0)
+            repository_locacao.create(
+                Usuario("Cid", "cid@x.com"), memoria.bicicletas[1], centro
+            ).data_hora_inicio = datetime(2026, 10, 1, hora, 0)
         pico = service.gerar_relatorio().horarios_pico[0]
         self.assertEqual((pico.hora_pico, pico.locacoes_na_hora_pico), (7, 1))
 

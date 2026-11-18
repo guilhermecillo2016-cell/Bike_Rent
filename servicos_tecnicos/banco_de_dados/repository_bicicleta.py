@@ -1,16 +1,17 @@
 """
 servicos_tecnicos/banco_de_dados/repository_bicicleta.py
 -----------------------------------------------------------
-Armazenamento em memória das bicicletas. A localização de uma
-bicicleta é só o seu estacao_id: a estação não guarda lista nenhuma,
-a lista (e a contagem de vagas) sai de uma consulta por estacao_id.
+Armazenamento em memória das bicicletas. Quem guarda a lista das
+bicicletas de cada estação é a própria Estacao (fonte da verdade);
+Bicicleta.estacao_id só espelha essa associação.
 """
 
 import uuid
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import BicicletaORM
+from dominio.bicicleta.bicicleta import Bicicleta
+from dominio.estacao.estacao import Estacao
 
 
 def _novo_qr_code() -> str:
@@ -21,27 +22,31 @@ def _novo_qr_code() -> str:
             return qr_code
 
 
-def create(estacao_id: int) -> BicicletaORM:
-    bicicleta = BicicletaORM(
-        id=memoria.proximo_id("bicicletas"),
-        qr_code=_novo_qr_code(),
-        estacao_id=estacao_id,
-    )
-    memoria.bicicletas[bicicleta.id] = bicicleta
+def create(estacao: Optional[Estacao]) -> Bicicleta:
+    """Cria a bicicleta já estacionada em `estacao` (ou solta, se None)."""
+    bicicleta = Bicicleta(memoria.proximo_id("bicicletas"), _novo_qr_code())
+    memoria.bicicletas[bicicleta.id_bicicleta] = bicicleta
+    if estacao is not None:
+        estacao.adicionar_bicicleta(bicicleta)
     return bicicleta
 
 
-def get_by_id(bicicleta_id: int) -> Optional[BicicletaORM]:
+def get_by_id(bicicleta_id: int) -> Optional[Bicicleta]:
     return memoria.bicicletas.get(bicicleta_id)
 
 
-def get_by_qr(qr_code: str) -> Optional[BicicletaORM]:
+def get_by_qr(qr_code: str) -> Optional[Bicicleta]:
     return next((b for b in memoria.bicicletas.values() if b.qr_code == qr_code), None)
 
 
-def list_all() -> list[BicicletaORM]:
+def list_all() -> list[Bicicleta]:
     return list(memoria.bicicletas.values())
 
 
-def list_by_estacao(estacao_id: int) -> list[BicicletaORM]:
-    return [b for b in memoria.bicicletas.values() if b.estacao_id == estacao_id]
+def list_by_estacao(estacao_id: int) -> list[Bicicleta]:
+    """Quem sabe quais bicicletas estão na estação é a própria Estacao;
+    aqui só se pergunta a ela (na ordem de cadastro, como sempre)."""
+    estacao = memoria.estacoes.get(estacao_id)
+    if estacao is None:
+        return []
+    return sorted(estacao.bicicletas, key=lambda b: b.id)

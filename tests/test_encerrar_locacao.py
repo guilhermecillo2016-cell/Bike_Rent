@@ -11,6 +11,7 @@ from dominio.estacao.schemas import EstacaoCreate
 from dominio.locacao import service as locacao_service, tarifa
 from dominio.pagamento import service as pagamento_service
 from dominio.pagamento.schemas import CartaoCreate
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.banco_de_dados import memoria, repository_pacote
 from servicos_tecnicos.banco_de_dados.enums import (
     StatusBicicleta, StatusEstacao, StatusPagamento,
@@ -26,9 +27,11 @@ def _limpa():
     for d in (memoria.estacoes, memoria.bicicletas, memoria.locacoes,
               memoria.cartoes, memoria.pacotes, memoria.eventos_auditoria):
         d.clear()
+    memoria.usuarios[EMAIL] = Usuario("Fulano", EMAIL)
     definir_trava(TravaInteligenteMock(ModoTrava.SUCESSO))
     yield
     definir_trava(None)
+    memoria.usuarios.pop(EMAIL, None)
 
 class _Cobrancas(list):
     """Lista de valores cobrados + status que o falso devolve."""
@@ -72,7 +75,7 @@ def _corrida(segundos=120):
 
 
 def _pacote(minutos):
-    p = repository_pacote.create(EMAIL, minutos, datetime.now() + timedelta(days=7))
+    p = repository_pacote.create(memoria.usuarios[EMAIL], minutos, datetime.now() + timedelta(days=7))
     p.ativo = True
     return p
 

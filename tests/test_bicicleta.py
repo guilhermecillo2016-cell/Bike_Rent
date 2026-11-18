@@ -90,8 +90,8 @@ class CadastroTests(BaseTestCase):
         with mock.patch.object(
             repo.uuid, "uuid4", side_effect=lambda: SimpleNamespace(hex=next(sorteios))
         ):
-            primeira = repo.create(1)
-            segunda = repo.create(1)
+            primeira = repo.create(None)
+            segunda = repo.create(None)
         self.assertEqual(primeira.qr_code, "BIKE-" + "A" * 12)
         self.assertEqual(segunda.qr_code, "BIKE-" + "B" * 12)
 

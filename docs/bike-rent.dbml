@@ -1,0 +1,199 @@
+// Bike Rent — mapeamento objeto-relacional (PostgreSQL)
+// Cole em https://dbdiagram.io/d  (cada tabela traz a classe de origem na Note)
+
+Enum papel_usuario {
+  CICLISTA
+  OPERADOR
+  ADMINISTRADOR
+}
+
+Enum tipo_cartao {
+  CREDITO
+  DEBITO
+}
+
+Enum tipo_pagamento {
+  CREDITO
+  DEBITO
+  PIX
+}
+
+Enum status_bicicleta {
+  DISPONIVEL
+  EM_USO
+  EM_MANUTENCAO
+  BLOQUEADA
+}
+
+Table usuario {
+  id integer [pk, increment]
+  nome varchar(120) [not null]
+  email varchar(254) [not null, unique]
+  cpf char(11) [not null, unique]
+  senha_hash varchar(100) [not null]
+  papel papel_usuario [not null]
+  criado_em timestamptz [not null, default: `now()`]
+  Note: 'Classe Usuario'
+}
+
+Table cartao {
+  id integer [pk, increment]
+  usuario_id integer [not null]
+  token varchar(64) [not null, unique]
+  ultimos_digitos char(4) [not null]
+  bandeira varchar(20) [not null]
+  tipo tipo_cartao [not null]
+  validade date [not null]
+  Note: 'Classe Cartao. Nunca guarda o numero completo.'
+}
+
+Table pacote_minutos {
+  id integer [pk, increment]
+  usuario_id integer [not null]
+  minutos_contratados integer [not null, note: 'CHECK > 0']
+  minutos_restantes integer [not null, note: 'CHECK entre 0 e minutos_contratados']
+  validade timestamptz [not null]
+  situacao varchar(20) [not null, note: 'CHECK nos valores do enum atual']
+  criado_em timestamptz [not null, default: `now()`]
+  Note: 'Classe PacoteMinutos'
+  indexes {
+    (usuario_id, validade)
+  }
+}
+
+Table estacao {
+  id integer [pk, increment]
+  nome varchar(100) [not null]
+  endereco varchar(200) [not null]
+  capacidade integer [not null, note: 'CHECK > 0']
+  status varchar(15) [not null, note: 'CHECK nos valores do enum atual']
+  latitude "double precision" [not null, note: 'Geolocalizacao.latitude; CHECK entre -90 e 90']
+  longitude "double precision" [not null, note: 'Geolocalizacao.longitude; CHECK entre -180 e 180']
+  Note: 'Classe Estacao + objeto de valor Geolocalizacao embutido (latitude e longitude)'
+  indexes {
+    (latitude, longitude)
+  }
+}
+
+Table bicicleta {
+  id integer [pk, increment]
+  qr_code varchar(64) [not null, unique]
+  status status_bicicleta [not null, note: 'Padrao State: o objeto de estado e reconstruido a partir desta coluna']
+  estacao_id integer [note: 'nulo enquanto a bicicleta esta em uso']
+  Note: 'Classe Bicicleta'
+  indexes {
+    (estacao_id, status)
+  }
+}
+
+Table locacao {
+  id integer [pk, increment]
+  usuario_id integer [not null]
+  bicicleta_id integer [not null]
+  estacao_origem_id integer [not null]
+  estacao_destino_id integer [note: 'nulo ate o fim da corrida']
+  inicio timestamptz [not null]
+  fim timestamptz [note: 'nulo se e so se estacao_destino_id nulo; CHECK fim >= inicio']
+  minutos_do_pacote integer [not null, default: 0, note: 'CHECK >= 0']
+  valor_total numeric(10,2) [note: 'CHECK >= 0']
+  Note: 'Classe Locacao. Indice unico parcial: (bicicleta_id) onde fim e nulo (uma corrida em andamento por bicicleta)'
+  indexes {
+    (usuario_id, inicio) [name: 'ix_locacao_usuario_inicio']
+  }
+}
+
+Table pagamento {
+  id integer [pk, increment]
+  valor numeric(10,2) [not null, note: 'CHECK >= 0']
+  tipo tipo_pagamento [not null, note: 'Padrao Strategy: escolhe a estrategia de pagamento']
+  status varchar(15) [not null, note: 'CHECK nos valores atuais + CANCELADO (HU 2)']
+  locacao_id integer [note: 'pagamento de corrida']
+  pacote_id integer [note: 'pagamento de pacote']
+  token_cartao varchar(64) [note: 'obrigatorio se tipo e CREDITO ou DEBITO']
+  pix_codigo text [note: 'HU 2; obrigatorio se tipo e PIX']
+  pix_expira_em timestamptz [note: 'HU 2']
+  criado_em timestamptz [not null, default: `now()`]
+  Note: 'Classe Pagamento. CHECK: exatamente um entre locacao_id e pacote_id'
+  indexes {
+    locacao_id
+    pacote_id
+  }
+}
+
+Table comprovante_viagem {
+  id integer [pk, increment]
+  locacao_id integer [not null, unique]
+  pagamento_id integer [note: 'nulo quando a corrida foi toda coberta pelo pacote']
+  emitido_em timestamptz [not null, default: `now()`]
+  Note: 'Classe ComprovanteViagem'
+}
+
+Table evento_auditoria {
+  id integer [pk, increment]
+  usuario_id integer
+  acao varchar(60) [not null]
+  entidade varchar(40)
+  entidade_id integer
+  detalhes jsonb
+  ocorrido_em timestamptz [not null, default: `now()`]
+  Note: 'Classe EventoAuditoria. Somente inclusoes.'
+  indexes {
+    ocorrido_em
+  }
+}
+
+Table reporte_avaria {
+  id integer [pk, increment]
+  bicicleta_id integer [not null]
+  usuario_id integer [not null]
+  descricao text [not null]
+  reportado_em timestamptz [not null, default: `now()`]
+  resolvido_em timestamptz [note: 'nulo = reporte aberto']
+  Note: 'Classe ReporteAvaria'
+}
+
+Table redistribuicao_frota {
+  id integer [pk, increment]
+  operador_id integer [not null]
+  estacao_origem_id integer [not null]
+  estacao_destino_id integer [not null, note: 'CHECK diferente da origem']
+  realizada_em timestamptz [not null, default: `now()`]
+  Note: 'Classe RedistribuicaoFrota (HU 1)'
+}
+
+Table redistribuicao_item {
+  redistribuicao_id integer [not null]
+  bicicleta_id integer [not null]
+  Note: 'Tabela da associacao N:N entre RedistribuicaoFrota e Bicicleta'
+  indexes {
+    (redistribuicao_id, bicicleta_id) [pk]
+  }
+}
+
+// ---------- Associacoes (FK no lado N) ----------
+Ref: cartao.usuario_id > usuario.id [delete: cascade]
+Ref: pacote_minutos.usuario_id > usuario.id [delete: restrict]
+
+Ref: bicicleta.estacao_id > estacao.id [delete: restrict]
+
+Ref: locacao.usuario_id > usuario.id [delete: restrict]
+Ref: locacao.bicicleta_id > bicicleta.id [delete: restrict]
+Ref: locacao.estacao_origem_id > estacao.id [delete: restrict]
+Ref: locacao.estacao_destino_id > estacao.id [delete: restrict]
+
+Ref: pagamento.locacao_id > locacao.id [delete: restrict]
+Ref: pagamento.pacote_id > pacote_minutos.id [delete: restrict]
+
+Ref: comprovante_viagem.locacao_id - locacao.id [delete: restrict]
+Ref: comprovante_viagem.pagamento_id > pagamento.id [delete: restrict]
+
+Ref: reporte_avaria.bicicleta_id > bicicleta.id [delete: restrict]
+Ref: reporte_avaria.usuario_id > usuario.id [delete: restrict]
+
+Ref: redistribuicao_frota.operador_id > usuario.id [delete: restrict]
+Ref: redistribuicao_frota.estacao_origem_id > estacao.id [delete: restrict]
+Ref: redistribuicao_frota.estacao_destino_id > estacao.id [delete: restrict]
+Ref: redistribuicao_item.redistribuicao_id > redistribuicao_frota.id [delete: cascade]
+Ref: redistribuicao_item.bicicleta_id > bicicleta.id [delete: restrict]
+
+Ref: evento_auditoria.usuario_id > usuario.id [delete: set null]

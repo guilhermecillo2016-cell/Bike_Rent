@@ -8,6 +8,7 @@ from dominio.estacao.schemas import EstacaoCreate
 from dominio.locacao import service as locacao_service
 from dominio.pagamento import service as pagamento_service
 from dominio.pagamento.schemas import CartaoCreate
+from dominio.usuario.usuario import Usuario
 from servicos_tecnicos.banco_de_dados import memoria, repository_bicicleta
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta
 from servicos_tecnicos.iot import definir_trava
@@ -20,9 +21,11 @@ EMAIL = "c@x.com"
 def _limpa():
     for d in (memoria.estacoes, memoria.bicicletas, memoria.locacoes, memoria.cartoes):
         d.clear()
+    memoria.usuarios[EMAIL] = Usuario("Fulano", EMAIL)
     definir_trava(TravaInteligenteMock(ModoTrava.SUCESSO))
     yield
     definir_trava(None)
+    memoria.usuarios.pop(EMAIL, None)
 
 
 def _cenario(com_cartao=True, qtd=1):

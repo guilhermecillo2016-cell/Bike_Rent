@@ -9,38 +9,21 @@ arquivo muda.
 from typing import Optional
 
 from servicos_tecnicos.banco_de_dados import memoria
-from servicos_tecnicos.banco_de_dados.models import UsuarioORM
-from servicos_tecnicos.banco_de_dados.enums import PapelUsuario
+from dominio.usuario.usuario import Usuario
 
 
-def get_by_email(email: str) -> Optional[UsuarioORM]:
+def get_by_email(email: str) -> Optional[Usuario]:
     return memoria.usuarios.get(email)
 
 
-def get_by_cpf(cpf: str) -> Optional[UsuarioORM]:
+def get_by_cpf(cpf: str) -> Optional[Usuario]:
     """Usuário dono do CPF (só números). Quem não tem CPF nunca casa."""
     if not cpf:
         return None
     return next((u for u in memoria.usuarios.values() if u.cpf == cpf), None)
 
 
-def create(
-    nome: str,
-    email: str,
-    senha_hash: str,
-    papel: PapelUsuario,
-    cpf: Optional[str] = None,
-    telefone: Optional[str] = None,
-    endereco: Optional[str] = None,
-) -> UsuarioORM:
-    usuario = UsuarioORM(
-        nome=nome,
-        email=email,
-        senha_hash=senha_hash,
-        cpf=cpf,
-        papel=papel,
-        telefone=telefone,
-        endereco=endereco,
-    )
-    memoria.usuarios[email] = usuario
+def create(usuario: Usuario) -> Usuario:
+    """Guarda o usuário já montado (o e-mail é a chave)."""
+    memoria.usuarios[usuario.email] = usuario
     return usuario
