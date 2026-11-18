@@ -43,11 +43,13 @@ class TipoPagamento(StrEnum):
 
 
 class StatusPagamento(StrEnum):
-    """Resultado da cobrança: nasce PENDENTE até o gateway responder."""
+    """Situação do pagamento: nasce PENDENTE e sai dela uma única vez, para
+    APROVADO, RECUSADO ou CANCELADO (pagamento PIX que venceu sem confirmação)."""
 
     PENDENTE = "PENDENTE"
     APROVADO = "APROVADO"
     RECUSADO = "RECUSADO"
+    CANCELADO = "CANCELADO"
 
 
 class StatusEstacao(StrEnum):

@@ -79,8 +79,10 @@ class PagamentoCartaoDebito(_PagamentoCartao):
 
 
 class PagamentoPix(MetodoPagamento):
-    """PIX simulado: gera o código "copia e cola" e deixa o pagamento PENDENTE.
-    A confirmação e a expiração são tratadas à parte (issue [C13])."""
+    """PIX simulado: gera o código "copia e cola", define a validade
+    (`pagamento.expira_em`) e deixa o pagamento PENDENTE. A confirmação e o
+    cancelamento por vencimento (`verificar_status_pix`) são tratados à parte
+    (issue [C13])."""
 
     tipo = TipoPagamento.PIX
 
@@ -105,4 +107,5 @@ class PagamentoPix(MetodoPagamento):
         self._conferir_tipo(pagamento)
         validade = self.relogio() + timedelta(minutes=self.validade_minutos)
         pagamento.qr_code_pix = self.gerar_codigo(pagamento.valor, validade)
+        pagamento.expira_em = validade
         return StatusPagamento.PENDENTE

@@ -19,7 +19,7 @@ from servicos_tecnicos.banco_de_dados import (
     repository_pagamento,
     repository_usuario,
 )
-from servicos_tecnicos.banco_de_dados.enums import TipoPagamento
+from servicos_tecnicos.banco_de_dados.enums import StatusPagamento, TipoPagamento
 from dominio.pagamento.cartao import Cartao
 from dominio.pagamento.metodos_pagamento import (
     PagamentoCartaoCredito,
@@ -161,8 +161,22 @@ class PagamentoService:
             token_cartao=token,
         )
         usuario = self.usuario_repo.get_by_email(email)
-        pagamento.status = metodo.processar(pagamento, usuario)
+        resultado = metodo.processar(pagamento, usuario)
+        self._aplicar_resultado(pagamento, resultado)
         return pagamento
+
+    @staticmethod
+    def _aplicar_resultado(pagamento, resultado):
+        """Aplica o resultado da estratégia pelas transições do próprio
+        Pagamento (nunca atribui `status` direto). PENDENTE: nada a fazer."""
+        transicoes = {
+            StatusPagamento.APROVADO: pagamento.aprovar,
+            StatusPagamento.RECUSADO: pagamento.recusar,
+            StatusPagamento.CANCELADO: pagamento.cancelar,
+        }
+        transicao = transicoes.get(resultado)
+        if transicao is not None:
+            transicao()
  
     # --- Cartões (RF-11, RN-06) ---------------------------------------
     def vincular_cartao(self, email_usuario: str, dados: CartaoCreate) -> Cartao:
