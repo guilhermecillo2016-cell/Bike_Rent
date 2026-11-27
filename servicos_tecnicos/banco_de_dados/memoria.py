@@ -7,7 +7,9 @@ ficam só em memória (dicionários Python) e são perdidos a cada
 reinício da aplicação.
 
 Quando um banco de verdade entrar, só esse arquivo (e os
-repository_*.py que o usam) precisam mudar.
+repository_*.py que o usam) precisam mudar. Só os repositórios em memória
+(repository_*.py) mexem nestes dicionários; os services usam as interfaces
+de repositorios.py, obtidas pela fabrica.py.
 """
 
 import itertools
@@ -50,3 +52,31 @@ _contadores = defaultdict(lambda: itertools.count(1))
 
 def proximo_id(colecao: str) -> int:
     return next(_contadores[colecao])
+
+
+class ColecaoPorId:
+    """Base das implementações em memória dos repositórios ([A13]): um dos
+    dicionários acima (id -> objeto). A subclasse diz qual dicionário
+    (`colecao`) e o nome do atributo de id do objeto (`atributo_id`).
+
+    O dicionário é buscado a cada chamada (e não guardado na instância) para
+    continuar valendo se alguém o trocar inteiro."""
+
+    colecao: str
+    atributo_id: str
+
+    def _dados(self) -> dict:
+        return globals()[self.colecao]
+
+    def salvar(self, obj):
+        """Insere (gera o id se o objeto ainda não tem) ou atualiza."""
+        if getattr(obj, self.atributo_id) is None:
+            setattr(obj, self.atributo_id, proximo_id(self.colecao))
+        self._dados()[getattr(obj, self.atributo_id)] = obj
+        return obj
+
+    def get_by_id(self, id_):
+        return self._dados().get(id_)
+
+    def list_all(self) -> list:
+        return list(self._dados().values())
