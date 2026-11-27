@@ -58,7 +58,16 @@ class MetodoPagamento(ABC):
 
 class _PagamentoCartao(MetodoPagamento):
     """Parte comum do crédito e do débito: cobra no gateway o token do cartão
-    que o service já colocou em `pagamento.token_cartao`."""
+    que o service já colocou em `pagamento.token_cartao`.
+
+    «abstract» (Padrao-Strategy): `tipo` é abstrato; crédito e débito o
+    definem como atributo de classe, então `_PagamentoCartao(gateway)`
+    levanta TypeError ([A25])."""
+
+    @property
+    @abstractmethod
+    def tipo(self) -> TipoPagamento:
+        """CARTAO_CREDITO ou CARTAO_DEBITO, definido pela subclasse."""
 
     def __init__(self, gateway: GatewayCobranca):
         self.gateway = gateway

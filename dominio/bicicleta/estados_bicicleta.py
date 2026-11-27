@@ -18,15 +18,23 @@ ConflitoDeRegra (409); enviar_para_manutencao() em EM_MANUTENCAO e
 liberar_apos_reparo() fora dela são ignorados.
 """
 
-from abc import ABC
-from typing import Callable, ClassVar, Optional
+from abc import ABC, abstractmethod
+from typing import Callable, Optional
 
 from dominio.erros import ConflitoDeRegra
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta
 
 
 class EstadoBicicleta(ABC):
-    status: ClassVar[StatusBicicleta]
+    """«abstract» (Padrao-State): declara as operações que dependem do estado,
+    cada uma com uma implementação padrão. `status` é abstrato: cada estado
+    concreto o define como atributo de classe (`status = DISPONIVEL` etc.),
+    então `EstadoBicicleta()` levanta TypeError ([A25])."""
+
+    @property
+    @abstractmethod
+    def status(self) -> StatusBicicleta:
+        """O StatusBicicleta que este estado representa."""
 
     def apta_para_locacao(self) -> bool:
         return False
