@@ -18,7 +18,6 @@ from dominio.estacao import service as estacao_service
 from dominio.estacao.schemas_disponibilidade import EstacaoDisponibilidade
 from dominio.geolocalizacao.geolocalizacao import Geolocalizacao
 from servicos_tecnicos import mapas
-from servicos_tecnicos.banco_de_dados import memoria
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao
 
 

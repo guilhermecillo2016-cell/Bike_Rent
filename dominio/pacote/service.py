@@ -15,7 +15,7 @@ from fastapi import HTTPException, status
 from dominio.pacote.schemas import ItemCatalogo
 from dominio.pagamento.service import PagamentoService
 from dominio.usuario import service as usuario_service
-from servicos_tecnicos.banco_de_dados import repository_pacote
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
 
 # Catálogo fixo. Preços e validades são valores provisórios: ajuste às regras.
@@ -29,7 +29,8 @@ CATALOGO_PACOTES: tuple[ItemCatalogo, ...] = (
 class PacoteService:
     def __init__(self, pagamento_service, pacote_repo=None, relogio=None):
         self.pagamento_service = pagamento_service
-        self.pacote_repo = pacote_repo or repository_pacote
+        # RepositorioPacote (padrão: o da fábrica, em memória)
+        self.pacote_repo = pacote_repo or repositorios().pacote
         self.relogio = relogio or datetime.now  # injetável para testar validade
 
     # --- Catálogo e compra --------------------------------------------
@@ -49,6 +50,7 @@ class PacoteService:
         pagamento = self.pagamento_service.cobrar_pacote(email, item.preco, pacote.id)
         if pagamento.status == StatusPagamento.APROVADO:
             pacote.ativar()
+            self._salvar(pacote)
         return pacote, pagamento
 
     def listar_pacotes(self, email):
@@ -79,6 +81,7 @@ class PacoteService:
             if restante == 0:
                 break
             restante -= pacote.consumir(restante, self.relogio())  # zerou -> ativo=False
+            self._salvar(pacote)
         return minutos - restante
 
     # --- Internos -----------------------------------------------------
@@ -94,7 +97,17 @@ class PacoteService:
 
     def _atualizar_situacao(self, pacote):
         """Pacote ativo que venceu ou zerou passa a ativo=False."""
+        antes = pacote.ativo
         pacote.atualizar_situacao(self.relogio())
+        if pacote.ativo != antes:
+            self._salvar(pacote)
+
+    def _salvar(self, pacote):
+        """Grava a mudança no repositório ([A13]). Dublês de teste antigos,
+        sem `salvar`, guardam por referência e não precisam dela."""
+        salvar = getattr(self.pacote_repo, "salvar", None)
+        if salvar is not None:
+            salvar(pacote)
 
     def _pacotes_validos(self, email):
         pacotes = self.pacote_repo.list_by_email(email)

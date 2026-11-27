@@ -17,7 +17,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-from servicos_tecnicos.banco_de_dados import repository_usuario as repo
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from dominio.erros import RecursoNaoEncontrado
 from dominio.usuario.usuario import Usuario
 UsuarioORM = Usuario  # alias de compatibilidade (tests/test_rbac.py usa service.UsuarioORM)
@@ -93,7 +93,7 @@ def verify_password(senha_texto: str, senha_hash: str) -> bool:
 # Cadastro (História 1) — ciclista
 # ------------------------------------------------------------------
 def register_user(dados: UsuarioCreate) -> Usuario:
-    if repo.get_by_email(dados.email):
+    if repositorios().usuario.get_by_email(dados.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Já existe uma conta com esse e-mail",
@@ -106,7 +106,7 @@ def register_user(dados: UsuarioCreate) -> Usuario:
         )
 
     cpf = re.sub(r"\D", "", dados.cpf)
-    if repo.get_by_cpf(cpf):
+    if repositorios().usuario.get_by_cpf(cpf):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Já existe uma conta com esse CPF",
@@ -117,7 +117,7 @@ def register_user(dados: UsuarioCreate) -> Usuario:
         telefone=dados.telefone, endereco=dados.endereco,
     )
     usuario.definir_senha(dados.senha)
-    return repo.create(usuario)
+    return repositorios().usuario.create(usuario)
 
 
 # ------------------------------------------------------------------
@@ -126,7 +126,7 @@ def register_user(dados: UsuarioCreate) -> Usuario:
 # e-mail e senha (ver AdminCreate/OperadorCreate).
 # ------------------------------------------------------------------
 def _cadastrar_equipe(dados: AdminCreate, papel: PapelUsuario) -> Usuario:
-    if repo.get_by_email(dados.email):
+    if repositorios().usuario.get_by_email(dados.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Já existe uma conta com esse e-mail",
@@ -134,7 +134,7 @@ def _cadastrar_equipe(dados: AdminCreate, papel: PapelUsuario) -> Usuario:
 
     usuario = Usuario(dados.nome, dados.email, papel=papel)
     usuario.definir_senha(dados.senha)
-    return repo.create(usuario)
+    return repositorios().usuario.create(usuario)
 
 
 def register_admin(dados: AdminCreate) -> Usuario:
@@ -150,14 +150,14 @@ def register_operador(dados: OperadorCreate) -> Usuario:
 # ------------------------------------------------------------------
 def obter_usuario(email: str) -> Usuario:
     """Usuário cadastrado com esse e-mail; 404 se não existe."""
-    usuario = repo.get_by_email(email)
+    usuario = repositorios().usuario.get_by_email(email)
     if usuario is None:
         raise RecursoNaoEncontrado("Usuário não encontrado")
     return usuario
 
 
 def authenticate_user(email: str, senha: str) -> Optional[Usuario]:
-    usuario = repo.get_by_email(email)
+    usuario = repositorios().usuario.get_by_email(email)
     if not usuario or not usuario.autenticar(senha):
         return None
     return usuario
@@ -189,7 +189,7 @@ def _usuario_do_token(token: str) -> Usuario:
     except JWTError:
         raise credentials_exception
 
-    usuario = repo.get_by_email(token_data.email)
+    usuario = repositorios().usuario.get_by_email(token_data.email)
     if usuario is None:
         raise credentials_exception
     return usuario

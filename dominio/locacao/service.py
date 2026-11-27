@@ -23,7 +23,7 @@ from dominio.avaria import service as avaria_service
 
 from dominio.comprovante import service as comprovante_service
 
-from servicos_tecnicos.banco_de_dados import repository_locacao as repo
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusBicicleta, StatusEstacao, StatusPagamento
 from dominio.locacao.locacao import Locacao
 from servicos_tecnicos.iot import ErroTrava, obter_trava
@@ -57,7 +57,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
     """
     usuario = usuario_service.obter_usuario(usuario_email)
 
-    if repo.get_ativa_by_usuario(usuario_email) is not None:
+    if repositorios().locacao.get_ativa_by_usuario(usuario_email) is not None:
         raise HTTPException(
             status_code=http.HTTP_409_CONFLICT,
             detail="Você já tem uma corrida em andamento",
@@ -95,13 +95,14 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
         )
 
     # Trava confirmada: agora sim a contagem começa (relógio do servidor).
-    locacao = repo.create(usuario, bicicleta, estacao)
+    locacao = repositorios().locacao.create(usuario, bicicleta, estacao)
     estacao_service.remover_bicicleta(bicicleta.id)  # estacao_id = None
     bicicleta.iniciar_uso()
+    repositorios().bicicleta.salvar(bicicleta)
     return locacao
 
 def obter_locacao_ativa(user_email: str) -> Locacao:
-    locacao = repo.get_ativa_by_usuario(user_email)
+    locacao = repositorios().locacao.get_ativa_by_usuario(user_email)
     if locacao is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -191,6 +192,7 @@ def encerrar_locacao(
 
     # 5) Fecha a locação ANTES de cobrar
     locacao.encerrar_locacao(destino, abatidos, fim)
+    repositorios().locacao.salvar(locacao)
     valor = locacao.valor_total
 
     # 6) Cobrança do excedente (extensão 9-10a: valor 0 -> sem cobrança)

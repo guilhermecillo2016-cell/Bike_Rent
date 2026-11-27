@@ -12,13 +12,7 @@ from decimal import Decimal, InvalidOperation
 from fastapi import HTTPException, status
 
 from servicos_tecnicos.pagamentos import tokenizador
-from servicos_tecnicos.banco_de_dados import repository_cartao as repo
-from servicos_tecnicos.banco_de_dados import (
-    repository_locacao,
-    repository_pacote,
-    repository_pagamento,
-    repository_usuario,
-)
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento, TipoPagamento
 from dominio.pagamento.cartao import Cartao
 from dominio.pagamento.metodos_pagamento import (
@@ -52,8 +46,9 @@ def _normalizar_tipo(tipo: str):
 class PagamentoService:
     """Regras de pagamento (RF-12, RN-06, RN-07).
  
-    Os repositories e o gateway são módulos/objetos injetáveis; por padrão usa
-    os repositories em memória e o gateway simulado.
+    Os repositórios (interfaces de repositorios.py) e o gateway são
+    injetáveis; por padrão usa os repositórios da fábrica (em memória) e o
+    gateway simulado.
 
     A forma de pagamento é uma estratégia (padrão Strategy): `metodos` mapeia
     cada TipoPagamento para o MetodoPagamento que o processa.
@@ -63,12 +58,13 @@ class PagamentoService:
         self, pagamento_repo=None, cartao_repo=None, locacao_repo=None,
         pacote_repo=None, gateway=None, usuario_repo=None,
     ):
-        self.pagamento_repo = pagamento_repo or repository_pagamento
-        self.cartao_repo = cartao_repo or repo
-        self.locacao_repo = locacao_repo or repository_locacao
-        self.pacote_repo = pacote_repo or repository_pacote
+        repos = repositorios()
+        self.pagamento_repo = pagamento_repo or repos.pagamento
+        self.cartao_repo = cartao_repo or repos.cartao
+        self.locacao_repo = locacao_repo or repos.locacao
+        self.pacote_repo = pacote_repo or repos.pacote
         self.gateway = gateway or GatewayPagamento()
-        self.usuario_repo = usuario_repo or repository_usuario
+        self.usuario_repo = usuario_repo or repos.usuario
         self.metodos = {
             metodo.tipo: metodo
             for metodo in (
@@ -163,7 +159,15 @@ class PagamentoService:
         usuario = self.usuario_repo.get_by_email(email)
         resultado = metodo.processar(pagamento, usuario)
         self._aplicar_resultado(pagamento, resultado)
+        self._salvar(pagamento)  # status, e no PIX o código e a validade
         return pagamento
+
+    def _salvar(self, pagamento):
+        """Grava a mudança no repositório ([A13]). Dublês de teste antigos,
+        sem `salvar`, guardam por referência e não precisam dela."""
+        salvar = getattr(self.pagamento_repo, "salvar", None)
+        if salvar is not None:
+            salvar(pagamento)
 
     @staticmethod
     def _aplicar_resultado(pagamento, resultado):
