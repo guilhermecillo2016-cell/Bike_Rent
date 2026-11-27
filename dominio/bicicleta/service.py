@@ -5,11 +5,16 @@ Regras de negócio do domínio Bicicleta: cadastro, busca por QR Code e
 troca de status. É daqui que as outras trilhas consomem a bicicleta:
 
 - get_by_qr(qr)         -> validação do QR Code (B2)
-- set_status(id, st)    -> transições da corrida (B3/B5/B6)
+- iniciar_uso / finalizar_uso -> transições da corrida (B3/B5/B6)
+- set_status(id, st)    -> troca direta de status (testes e ajustes internos)
 - apta_para_locacao()   -> método do próprio Bicicleta
 
 A localização de uma bicicleta é só o seu estacao_id; a lista e a
 contagem de vagas da estação saem de consultas por esse campo.
+
+Auditoria ([A26], statechart da Bicicleta): cada troca de estado gera um
+EventoAuditoria (BICICLETA, status anterior, status novo, quem causou).
+Quando o status não muda, não há evento.
 """
 
 from typing import Optional
@@ -64,15 +69,40 @@ def get_by_qr(qr_code: str) -> Bicicleta:
     return bicicleta
 
 
-def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> Bicicleta:
-    """Troca interna de status, sem auditoria (usada pelo fluxo da corrida).
+def _auditar(bicicleta: Bicicleta, anterior, usuario_email: str) -> None:
+    """Registra a troca de estado (nada, se o status não mudou)."""
+    anterior, novo = str(StatusBicicleta(anterior)), str(bicicleta.status)
+    if anterior != novo:
+        auditoria_service.registrar(
+            usuario_email, "BICICLETA", bicicleta.id, anterior, novo
+        )
 
-    A alteração manual feita por administrador/operador, com registro de
-    auditoria e a regra da bicicleta em uso, é da A5 e usa esta função.
+
+def set_status(
+    bicicleta_id: int, novo_status: StatusBicicleta, usuario_email: str = "sistema"
+) -> Bicicleta:
+    """Troca direta de status, sem as regras da troca manual (usada em
+    testes e ajustes internos). Registra na auditoria se o status mudar.
+
+    A alteração manual feita por administrador/operador, com a regra da
+    bicicleta em uso e da avaria pendente, é `alterar_status_manual`.
     """
     bicicleta = obter_bicicleta(bicicleta_id)
+    anterior = bicicleta.status
     bicicleta.set_status(novo_status)  # valor inválido -> ValueError
-    return repositorios().bicicleta.salvar(bicicleta)
+    repositorios().bicicleta.salvar(bicicleta)
+    _auditar(bicicleta, anterior, usuario_email)
+    return bicicleta
+
+
+def iniciar_uso(bicicleta: Bicicleta, usuario_email: str) -> Bicicleta:
+    """Início da corrida: DISPONIVEL -> EM_USO (409 em outro estado).
+    Registra o evento em nome do ciclista."""
+    anterior = bicicleta.status
+    bicicleta.iniciar_uso()
+    repositorios().bicicleta.salvar(bicicleta)
+    _auditar(bicicleta, anterior, usuario_email)
+    return bicicleta
 
 
 def _tem_avaria_pendente(bicicleta_id: int) -> bool:
@@ -103,17 +133,16 @@ def alterar_status_manual(
     return bicicleta
 
 
-def finalizar_uso(bicicleta_id: int) -> Bicicleta:
+def finalizar_uso(bicicleta_id: int, usuario_email: str = "sistema") -> Bicicleta:
     """Chamada ao encerrar a corrida: a bicicleta volta a DISPONIVEL, ou vai
-    para EM_MANUTENCAO se houver bloqueio agendado (que então é limpo)."""
+    para EM_MANUTENCAO se houver bloqueio agendado (que então é limpo).
+    As duas saídas geram evento, em nome de `usuario_email` (o ciclista,
+    quando vem da locação)."""
     bicicleta = obter_bicicleta(bicicleta_id)
-    bloqueada = bicicleta.finalizar_uso()
+    anterior = bicicleta.status
+    bicicleta.finalizar_uso()
     repositorios().bicicleta.salvar(bicicleta)
-    if bloqueada:
-        auditoria_service.registrar(
-            "sistema", "BICICLETA", bicicleta.id,
-            str(StatusBicicleta.EM_USO), str(StatusBicicleta.EM_MANUTENCAO),
-        )
+    _auditar(bicicleta, anterior, usuario_email)
     return bicicleta
 
 

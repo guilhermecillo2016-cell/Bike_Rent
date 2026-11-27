@@ -48,10 +48,14 @@ def _bicicleta(estacao):
 
 
 def _em_corrida(estacao):
-    """Bicicleta na rua, como a locação deixa: sem estação e EM_USO."""
+    """Bicicleta na rua, como a locação deixa: sem estação e EM_USO.
+
+    A ida para EM_USO também gera evento ([A26]); ele é descartado aqui para
+    os testes contarem só os eventos do que testam."""
     bicicleta = _bicicleta(estacao)
     estacoes.remover_bicicleta(bicicleta.id)
     bicicletas.set_status(bicicleta.id, StatusBicicleta.EM_USO)
+    memoria.eventos_auditoria.clear()
     return bicicleta
 
 
@@ -157,11 +161,17 @@ class BicicletaEmCorridaTests(BaseTestCase):
         self.assertEqual(ultimo.usuario_email, "sistema")
         self.assertEqual((ultimo.status_anterior, ultimo.status_novo), ("EM_USO", "EM_MANUTENCAO"))
 
-    def test_fim_da_corrida_sem_bloqueio_volta_a_disponivel_sem_evento(self):
+    def test_fim_da_corrida_sem_bloqueio_volta_a_disponivel_com_evento(self):
+        # Statechart da Bicicleta: "Cada troca de estado gera um EventoAuditoria" ([A26]).
         bicicleta = _em_corrida(_estacao())
-        bicicletas.finalizar_uso(bicicleta.id)
+        bicicletas.finalizar_uso(bicicleta.id, CID.email)
         self.assertEqual(bicicleta.status, StatusBicicleta.DISPONIVEL)
-        self.assertEqual(auditoria.listar(), [])
+        eventos = auditoria.listar()
+        self.assertEqual(len(eventos), 1)
+        self.assertEqual(
+            (eventos[0].usuario_email, eventos[0].status_anterior, eventos[0].status_novo),
+            (CID.email, "EM_USO", "DISPONIVEL"),
+        )
 
     def test_finalizar_uso_de_bicicleta_inexistente_404(self):
         self.assertEqual(self.codigo_http(bicicletas.finalizar_uso, 999), 404)
