@@ -294,3 +294,38 @@ def test_tipo_sem_estrategia_devolve_400():
 
     assert erro.value.status_code == 400
     assert service.pagamento_repo.list_all() == []
+
+
+# --- Classes abstratas de verdade ([A25]) ------------------------------
+from dominio.pagamento.metodos_pagamento import _PagamentoCartao  # noqa: E402
+
+
+def test_metodo_pagamento_continua_abstrata_por_processar():
+    assert "processar" in MetodoPagamento.__abstractmethods__
+
+
+def test_pagamento_cartao_nao_pode_ser_instanciado():
+    with pytest.raises(TypeError):
+        _PagamentoCartao(GatewayFalso())
+
+
+def test_tipo_e_o_metodo_abstrato_do_pagamento_cartao():
+    assert _PagamentoCartao.__abstractmethods__ == frozenset({"tipo"})
+
+
+@pytest.mark.parametrize(
+    "classe, tipo", [(PagamentoCartaoCredito, CREDITO), (PagamentoCartaoDebito, DEBITO)]
+)
+def test_credito_e_debito_continuam_instanciaveis_com_o_mesmo_tipo(classe, tipo):
+    estrategia = classe(GatewayFalso())
+    assert isinstance(estrategia, _PagamentoCartao)
+    assert estrategia.tipo == tipo
+    assert classe.tipo == tipo  # continua atributo de classe, como no documento
+
+
+def test_cartao_sem_tipo_tambem_e_abstrato():
+    class SemTipo(_PagamentoCartao):
+        pass
+
+    with pytest.raises(TypeError):
+        SemTipo(GatewayFalso())

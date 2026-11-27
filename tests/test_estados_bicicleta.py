@@ -83,3 +83,48 @@ def test_ciclo_completo_disponivel_em_uso_disponivel():
     assert b.status == StatusBicicleta.EM_USO
     b.finalizar_uso()
     assert b.status == StatusBicicleta.DISPONIVEL
+
+
+# --- EstadoBicicleta é abstrata de verdade ([A25]) -------------------
+from dominio.bicicleta.estados_bicicleta import (  # noqa: E402
+    Bloqueada,
+    Disponivel,
+    EmManutencao,
+    EmUso,
+    EstadoBicicleta,
+    estado_de,
+)
+
+
+def test_estado_bicicleta_nao_pode_ser_instanciada():
+    with pytest.raises(TypeError):
+        EstadoBicicleta()
+
+
+def test_status_e_o_metodo_abstrato_da_classe_base():
+    assert EstadoBicicleta.__abstractmethods__ == frozenset({"status"})
+
+
+@pytest.mark.parametrize(
+    "classe, status",
+    [
+        (Disponivel, StatusBicicleta.DISPONIVEL),
+        (EmUso, StatusBicicleta.EM_USO),
+        (EmManutencao, StatusBicicleta.EM_MANUTENCAO),
+        (Bloqueada, StatusBicicleta.BLOQUEADA),
+    ],
+)
+def test_estados_concretos_continuam_instanciaveis_com_o_mesmo_status(classe, status):
+    estado = classe()
+    assert isinstance(estado, EstadoBicicleta)
+    assert estado.status == status
+    assert classe.status == status  # continua atributo de classe, como no documento
+    assert isinstance(estado_de(status), classe)
+
+
+def test_subclasse_sem_status_tambem_e_abstrata():
+    class SemStatus(EstadoBicicleta):
+        pass
+
+    with pytest.raises(TypeError):
+        SemStatus()
