@@ -97,8 +97,7 @@ def iniciar_locacao(usuario_email: str, qr_code: str) -> Locacao:
     # Trava confirmada: agora sim a contagem começa (relógio do servidor).
     locacao = repositorios().locacao.create(usuario, bicicleta, estacao)
     estacao_service.remover_bicicleta(bicicleta.id)  # estacao_id = None
-    bicicleta.iniciar_uso()
-    repositorios().bicicleta.salvar(bicicleta)
+    bicicleta_service.iniciar_uso(bicicleta, usuario_email)  # DISPONIVEL -> EM_USO, auditado
     return locacao
 
 def obter_locacao_ativa(user_email: str) -> Locacao:
@@ -178,7 +177,9 @@ def encerrar_locacao(
 
     # 3) Devolve a bicicleta (já validado: não falha)
     estacao_service.alocar_bicicleta(destino.id, locacao.bicicleta_id)
-    bicicleta = bicicleta_service.finalizar_uso(locacao.bicicleta_id)  # DISPONIVEL ou EM_MANUTENCAO
+    bicicleta = bicicleta_service.finalizar_uso(  # DISPONIVEL ou EM_MANUTENCAO, auditado
+        locacao.bicicleta_id, usuario_email
+    )
 
     avaria_reportada = bool(descricao_avaria and descricao_avaria.strip())
     if avaria_reportada:
