@@ -12,7 +12,7 @@ from dominio.auditoria import service as auditoria_service
 from dominio.avaria.schemas import AvariaPublic
 from dominio.bicicleta import service as bicicleta_service
 from dominio.usuario import service as usuario_service
-from servicos_tecnicos.banco_de_dados import repository_avaria as repo
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusAvaria, StatusBicicleta
 from dominio.avaria.reporte_avaria import ReporteAvaria
 
@@ -35,9 +35,10 @@ def reportar_avaria(usuario_email: str, bicicleta_id: int, descricao: str) -> Re
         )
     bicicleta = bicicleta_service.obter_bicicleta(bicicleta_id)
     usuario = usuario_service.obter_usuario(usuario_email)
-    avaria = repo.create(bicicleta, usuario, descricao)
+    avaria = repositorios().avaria.create(bicicleta, usuario, descricao)
 
     anterior = bicicleta.enviar_para_manutencao()
+    repositorios().bicicleta.salvar(bicicleta)
     if anterior is not None:
         auditoria_service.registrar(
             usuario_email, "BICICLETA", bicicleta.id,
@@ -47,7 +48,7 @@ def reportar_avaria(usuario_email: str, bicicleta_id: int, descricao: str) -> Re
 
 
 def obter_avaria(avaria_id: int) -> ReporteAvaria:
-    avaria = repo.get_by_id(avaria_id)
+    avaria = repositorios().avaria.get_by_id(avaria_id)
     if avaria is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -57,7 +58,7 @@ def obter_avaria(avaria_id: int) -> ReporteAvaria:
 
 
 def listar_avarias(status: Optional[StatusAvaria] = None) -> list[ReporteAvaria]:
-    avarias = repo.list_all()
+    avarias = repositorios().avaria.list_all()
     if status is not None:
         avarias = [a for a in avarias if a.status == status]
     return sorted(avarias, key=lambda a: a.id, reverse=True)
@@ -75,11 +76,14 @@ def resolver_avaria(avaria_id: int, operador_email: str) -> ReporteAvaria:
             detail="Esta avaria já foi resolvida",
         )
     avaria.resolver()
+    repositorios().avaria.salvar(avaria)
 
     bicicleta = avaria.bicicleta
-    if bicicleta.liberar_apos_reparo(
+    liberada = bicicleta.liberar_apos_reparo(
         lambda: bicicleta_service.tem_avaria_pendente(bicicleta.id)
-    ):
+    )
+    if liberada:
+        repositorios().bicicleta.salvar(bicicleta)
         auditoria_service.registrar(
             operador_email, "BICICLETA", bicicleta.id,
             str(StatusBicicleta.EM_MANUTENCAO), str(StatusBicicleta.DISPONIVEL),

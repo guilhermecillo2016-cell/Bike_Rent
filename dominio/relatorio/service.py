@@ -21,10 +21,7 @@ from fastapi import HTTPException, status as http
 
 from dominio.estacao import service as estacao_service
 from dominio.relatorio.schemas import HorarioPico, RelatorioAnalitico
-from servicos_tecnicos.banco_de_dados import repository_avaria
-from servicos_tecnicos.banco_de_dados import repository_bicicleta
-from servicos_tecnicos.banco_de_dados import repository_locacao
-from servicos_tecnicos.banco_de_dados import repository_pagamento
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusPagamento
 
 
@@ -80,7 +77,7 @@ def _horarios_pico(locacoes) -> list[HorarioPico]:
 
 
 def _estacao_da_bicicleta(bicicleta_id: int) -> Optional[int]:
-    bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
+    bicicleta = repositorios().bicicleta.get_by_id(bicicleta_id)
     return bicicleta.estacao_id if bicicleta else None
 
 
@@ -98,7 +95,7 @@ def gerar_relatorio(
     if estacao_id is not None:
         estacao_service.obter_estacao(estacao_id)
 
-    todas = repository_locacao.list_all()
+    todas = repositorios().locacao.list_all()
     locacoes_periodo = [l for l in todas if _no_periodo(l.data_hora_inicio, inicio, fim)]
     locacoes = [
         l for l in locacoes_periodo
@@ -106,7 +103,7 @@ def gerar_relatorio(
     ]
 
     pagamentos = [
-        p for p in repository_pagamento.list_all()
+        p for p in repositorios().pagamento.list_all()
         if p.status == StatusPagamento.APROVADO and _no_periodo(p.data_hora, inicio, fim)
     ]
     da_estacao = None
@@ -114,13 +111,13 @@ def gerar_relatorio(
         da_estacao = {l.id for l in todas if l.estacao_origem_id == estacao_id}
     corridas, pacotes = _receita(pagamentos, da_estacao)
 
-    bicicletas = repository_bicicleta.list_all()
+    bicicletas = repositorios().bicicleta.list_all()
     if estacao_id is not None:
         bicicletas = [b for b in bicicletas if b.estacao_id == estacao_id]
     total_bicicletas, ociosas, taxa = _ociosidade(bicicletas, locacoes_periodo)
 
     avarias = [
-        a for a in repository_avaria.list_all()
+        a for a in repositorios().avaria.list_all()
         if _no_periodo(a.data_hora, inicio, fim)
         and (estacao_id is None or _estacao_da_bicicleta(a.bicicleta_id) == estacao_id)
     ]

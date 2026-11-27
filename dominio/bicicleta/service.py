@@ -19,8 +19,7 @@ from fastapi import HTTPException, status as http
 from dominio.auditoria import service as auditoria_service
 from dominio.bicicleta.schemas import BicicletaCreate, BicicletaPublic
 from dominio.estacao import service as estacao_service
-from servicos_tecnicos.banco_de_dados import repository_avaria
-from servicos_tecnicos.banco_de_dados import repository_bicicleta as repo
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusAvaria, StatusBicicleta
 from dominio.bicicleta.bicicleta import Bicicleta
 
@@ -41,11 +40,11 @@ def cadastrar_bicicleta(dados: BicicletaCreate) -> Bicicleta:
     404 se a estação não existe; 409 se não está operacional ou está lotada.
     """
     estacao = estacao_service.exigir_vaga_livre(dados.estacao_id)
-    return repo.create(estacao)
+    return repositorios().bicicleta.create(estacao)
 
 
 def obter_bicicleta(bicicleta_id: int) -> Bicicleta:
-    bicicleta = repo.get_by_id(bicicleta_id)
+    bicicleta = repositorios().bicicleta.get_by_id(bicicleta_id)
     if bicicleta is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -56,7 +55,7 @@ def obter_bicicleta(bicicleta_id: int) -> Bicicleta:
 
 def get_by_qr(qr_code: str) -> Bicicleta:
     """Bicicleta dona do QR Code lido (extensão 3a do UC1: QR inválido -> 404)."""
-    bicicleta = repo.get_by_qr((qr_code or "").strip())
+    bicicleta = repositorios().bicicleta.get_by_qr((qr_code or "").strip())
     if bicicleta is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -73,11 +72,11 @@ def set_status(bicicleta_id: int, novo_status: StatusBicicleta) -> Bicicleta:
     """
     bicicleta = obter_bicicleta(bicicleta_id)
     bicicleta.set_status(novo_status)  # valor inválido -> ValueError
-    return bicicleta
+    return repositorios().bicicleta.salvar(bicicleta)
 
 
 def _tem_avaria_pendente(bicicleta_id: int) -> bool:
-    avarias = repository_avaria.list_by_bicicleta(bicicleta_id)
+    avarias = repositorios().avaria.list_by_bicicleta(bicicleta_id)
     return any(a.status != StatusAvaria.RESOLVIDO for a in avarias)
 tem_avaria_pendente = _tem_avaria_pendente
 
@@ -95,6 +94,7 @@ def alterar_status_manual(
     mudanca = bicicleta.alterar_status_manual(
         StatusBicicleta(novo_status), lambda: _tem_avaria_pendente(bicicleta.id)
     )
+    repositorios().bicicleta.salvar(bicicleta)  # status ou bloqueio agendado
     if mudanca is not None:
         anterior, novo = mudanca
         auditoria_service.registrar(
@@ -107,7 +107,9 @@ def finalizar_uso(bicicleta_id: int) -> Bicicleta:
     """Chamada ao encerrar a corrida: a bicicleta volta a DISPONIVEL, ou vai
     para EM_MANUTENCAO se houver bloqueio agendado (que então é limpo)."""
     bicicleta = obter_bicicleta(bicicleta_id)
-    if bicicleta.finalizar_uso():
+    bloqueada = bicicleta.finalizar_uso()
+    repositorios().bicicleta.salvar(bicicleta)
+    if bloqueada:
         auditoria_service.registrar(
             "sistema", "BICICLETA", bicicleta.id,
             str(StatusBicicleta.EM_USO), str(StatusBicicleta.EM_MANUTENCAO),
@@ -119,7 +121,7 @@ def listar_bicicletas(
     status: Optional[StatusBicicleta] = None,
     estacao_id: Optional[int] = None,
 ) -> list[Bicicleta]:
-    bicicletas = repo.list_all()
+    bicicletas = repositorios().bicicleta.list_all()
     if status is not None:
         bicicletas = [b for b in bicicletas if b.status == status]
     if estacao_id is not None:
@@ -141,6 +143,6 @@ def validar_qr(qr_code: str) -> Bicicleta:
     if not bicicleta.apta_para_locacao():
         sugestoes = []
         if bicicleta.estacao_id is not None: #EM_USO não tem estação
-            sugestoes = [b for b in repo.list_by_estacao(bicicleta.estacao_id) if b.id != bicicleta.id and b.apta_para_locacao()]
+            sugestoes = [b for b in repositorios().bicicleta.list_by_estacao(bicicleta.estacao_id) if b.id != bicicleta.id and b.apta_para_locacao()]
         raise BicicletaIndisponivel(bicicleta, sugestoes)
     return bicicleta

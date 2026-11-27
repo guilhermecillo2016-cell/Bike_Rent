@@ -9,7 +9,7 @@ a rota do administrador usa listar().
 from typing import Literal
 
 from dominio.auditoria.schemas import EventoAuditoriaPublic
-from servicos_tecnicos.banco_de_dados import repository_auditoria as repo
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from dominio.auditoria.evento_auditoria import EventoAuditoria
 
 
@@ -33,11 +33,11 @@ def registrar(
     status_novo: str,
 ) -> EventoAuditoria:
     """Grava um evento de alteração de status."""
-    return repo.create(
+    return repositorios().auditoria.create(
         usuario_email, tipo_entidade, entidade_id, status_anterior, status_novo
     )
 
 
 def listar() -> list[EventoAuditoria]:
     """Todos os eventos, do mais recente para o mais antigo."""
-    return sorted(repo.list_all(), key=lambda e: e.id, reverse=True)
+    return sorted(repositorios().auditoria.list_all(), key=lambda e: e.id, reverse=True)

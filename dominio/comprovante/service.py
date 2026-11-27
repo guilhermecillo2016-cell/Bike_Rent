@@ -8,11 +8,7 @@ completo de cartão (RNF-09): só bandeira e últimos dígitos.
 from fastapi import HTTPException, status as http
 
 from dominio.comprovante.schemas import ComprovantePublic
-from servicos_tecnicos.banco_de_dados import (
-    repository_cartao,
-    repository_comprovante as repo,
-    repository_locacao,
-)
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from dominio.locacao.locacao import Locacao
 from dominio.comprovante.comprovante_viagem import ComprovanteViagem
 
@@ -20,11 +16,11 @@ from dominio.comprovante.comprovante_viagem import ComprovanteViagem
 def emitir(locacao: Locacao, pagamento=None) -> ComprovanteViagem:
     """Gera o comprovante ao encerrar. `pagamento` é None quando não houve
     cobrança (pacote cobriu tudo) ou quando ela não pôde ser feita."""
-    return repo.create(locacao, pagamento)
+    return repositorios().comprovante.create(locacao, pagamento)
 
 
 def _descrever_cartao(email: str, token) -> str:
-    for c in repository_cartao.list_cartoes(email):
+    for c in repositorios().cartao.list_cartoes(email):
         if c.token == token:
             tipo = "crédito" if c.tipo in ("credito", "CARTAO_CREDITO") else "débito"
             return f"{c.bandeira} {tipo} final {c.ultimos_digitos}"
@@ -64,10 +60,10 @@ def obter_do_ciclista(locacao_id: int, usuario_email: str) -> ComprovantePublic:
     nao_encontrado = HTTPException(
         status_code=http.HTTP_404_NOT_FOUND, detail="Comprovante não encontrado"
     )
-    locacao = repository_locacao.get_by_id(locacao_id)
+    locacao = repositorios().locacao.get_by_id(locacao_id)
     if locacao is None or locacao.usuario_email != usuario_email:
         raise nao_encontrado
-    comprovante = repo.get_by_locacao(locacao_id)
+    comprovante = repositorios().comprovante.get_by_locacao(locacao_id)
     if comprovante is None:
         raise nao_encontrado
     return to_public(comprovante, locacao)

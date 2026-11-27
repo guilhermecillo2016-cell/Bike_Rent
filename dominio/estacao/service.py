@@ -11,8 +11,7 @@ negócio.
 from fastapi import HTTPException, status as http
 
 from dominio.auditoria import service as auditoria_service
-from servicos_tecnicos.banco_de_dados import repository_bicicleta
-from servicos_tecnicos.banco_de_dados import repository_estacao as repo
+from servicos_tecnicos.banco_de_dados.fabrica import repositorios
 from servicos_tecnicos.banco_de_dados.enums import StatusEstacao
 from dominio.bicicleta.bicicleta import Bicicleta
 from dominio.estacao.estacao import Estacao
@@ -44,7 +43,7 @@ def to_public(estacao: Estacao) -> EstacaoPublic:
 
 def obter_estacao(estacao_id: int) -> Estacao:
     """Devolve a estação ou levanta 404."""
-    estacao = repo.get_by_id(estacao_id)
+    estacao = repositorios().estacao.get_by_id(estacao_id)
     if estacao is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -75,7 +74,7 @@ def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> Bicicleta:
     409 se a estação não aceita ou se a bicicleta já está em outra."""
     estacao = exigir_vaga_livre(estacao_id)
 
-    bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
+    bicicleta = repositorios().bicicleta.get_by_id(bicicleta_id)
     if bicicleta is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -83,13 +82,14 @@ def alocar_bicicleta(estacao_id: int, bicicleta_id: int) -> Bicicleta:
         )
 
     estacao.alocar_bicicleta(bicicleta)
-    return bicicleta
+    repositorios().estacao.salvar(estacao)
+    return repositorios().bicicleta.salvar(bicicleta)
 
 
 def remover_bicicleta(bicicleta_id: int) -> Bicicleta:
     """Tira a bicicleta da estação. 404 se ela não existe; 409 se não está em
     nenhuma estação ou se a estação dela não está operacional."""
-    bicicleta = repository_bicicleta.get_by_id(bicicleta_id)
+    bicicleta = repositorios().bicicleta.get_by_id(bicicleta_id)
     if bicicleta is None:
         raise HTTPException(
             status_code=http.HTTP_404_NOT_FOUND,
@@ -101,8 +101,10 @@ def remover_bicicleta(bicicleta_id: int) -> Bicicleta:
             detail="A bicicleta não está em nenhuma estação",
         )
 
-    bicicleta.estacao.remover_bicicleta(bicicleta)
-    return bicicleta
+    estacao = bicicleta.estacao
+    estacao.remover_bicicleta(bicicleta)
+    repositorios().estacao.salvar(estacao)
+    return repositorios().bicicleta.salvar(bicicleta)
 
 
 def alterar_status_manual(
@@ -116,6 +118,7 @@ def alterar_status_manual(
 
     anterior = str(estacao.status)
     estacao.set_status(novo_status)
+    repositorios().estacao.salvar(estacao)
     auditoria_service.registrar(
         usuario_email, "ESTACAO", estacao.id, anterior, str(novo_status)
     )
@@ -123,7 +126,7 @@ def alterar_status_manual(
 
 
 def criar_estacao(dados: EstacaoCreate) -> Estacao:
-    return repo.create(
+    return repositorios().estacao.create(
         nome=dados.nome,
         endereco=dados.endereco,
         latitude=dados.latitude,
@@ -133,13 +136,13 @@ def criar_estacao(dados: EstacaoCreate) -> Estacao:
 
 
 def listar_estacoes() -> list[Estacao]:
-    return repo.list_all()
+    return repositorios().estacao.list_all()
 
 
 def estacoes_proximas_com_vaga(referencia: Estacao, limite: int = 3) -> list[Estacao]:
     """Estações OPERACIONAIS com vaga livre, da mais perto para a mais longe."""
     candidatas = [
-        e for e in repo.list_all()
+        e for e in repositorios().estacao.list_all()
         if e.id != referencia.id
         and e.status == StatusEstacao.OPERACIONAL
         and vagas_disponiveis(e) > 0
